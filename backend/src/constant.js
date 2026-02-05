@@ -1,1 +1,1 @@
-export const DB_NAME = "splitwise",
+export const DB_NAME = "splitwise";
