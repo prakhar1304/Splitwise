@@ -13,18 +13,11 @@ const expenseSchema = new Schema({
         type: String,
         required: true
     },
-    participants: [
-        {
-            name: {
-                type: String,
-                required: true
-            },
-            amount: {
-                type: Number,
-                required: true
-            }
-        }
-    ],
+    participants:
+    {
+        type: [String],
+        required: true
+    },
 
 })
 

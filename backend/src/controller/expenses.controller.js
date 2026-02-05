@@ -11,21 +11,14 @@ const createExpense = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required and participants cannot be empty");
     }
 
-
-    const share = amount / participants.length;
-
-
-    const participantsWithShare = participants.map(pName => ({
-        name: pName,
-        amount: share
-    }));
+    console.log(participants);
 
     const expense = await Expense.create({
         name,
         description,
         amount,
         paidBy,
-        participants: participantsWithShare
+        participants
     });
 
     return res.status(201).json(
@@ -42,49 +35,45 @@ const getAllExpenses = asyncHandler(async (req, res) => {
 });
 
 // 3. Get Balances
-const getBalances = async (req, res) => {
+const getBalances = asyncHandler(async (req, res) => {
     const expenses = await Expense.find();
     const balances = {};
 
-    // STEP 1: Net balance calculation
+    // STEP 1: Calculate balance of each person
     expenses.forEach(expense => {
         const share = expense.amount / expense.participants.length;
 
-        // credit payer
+        // payer gets money back
         balances[expense.paidBy] =
             (balances[expense.paidBy] || 0) + expense.amount;
 
-        // debit participants
-        expense.participants.forEach(name => {
-            balances[name] = (balances[name] || 0) - share;
+        // participants owe their share
+        expense.participants.forEach(person => {
+            balances[person] =
+                (balances[person] || 0) - share;
         });
     });
 
-    // STEP 2: Very simple settlement
+    // STEP 2: Convert balance object to readable messages
     const result = [];
-    const people = Object.keys(balances);
 
-    people.forEach(p1 => {
-        if (balances[p1] < 0) {
-            people.forEach(p2 => {
-                if (balances[p2] > 0 && balances[p1] !== 0) {
-                    const amount = Math.min(
-                        Math.abs(balances[p1]),
-                        balances[p2]
-                    );
-
-                    if (amount > 0) {
-                        result.push(`${p1} owes ${p2} ₹${amount.toFixed(2)}`);
-                        balances[p1] += amount;
-                        balances[p2] -= amount;
-                    }
-                }
-            });
+    for (const person in balances) {
+        if (balances[person] < 0) {
+            result.push(
+                `${person} owes ₹${Math.abs(balances[person]).toFixed(2)}`
+            );
+        } else if (balances[person] > 0) {
+            result.push(
+                `${person} should receive ₹${balances[person].toFixed(2)}`
+            );
         }
-    });
+    }
 
-    res.json(result);
-};
+    return res.status(200).json(
+        new ApiResponse(200, result, "Simple balances calculated")
+    );
+});
+
 
 
 export {
