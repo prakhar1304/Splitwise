@@ -56,7 +56,7 @@ export default function BalancesSummary() {
 
   if (authLoading || (!user && !authLoading)) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-stone-500">
+      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
         Loading...
       </div>
     );
@@ -66,17 +66,17 @@ export default function BalancesSummary() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       <header className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Settlements
           </h1>
-          <p className="mt-1 text-stone-500">
+          <p className="mt-1 text-muted-foreground">
             Optimal way to settle all group debts
           </p>
         </div>
         <button
           type="button"
           onClick={fetchBalances}
-          className="inline-flex w-auto shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-orange-600 bg-white px-5 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 disabled:opacity-60"
+          className="inline-flex w-auto shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-primary bg-card px-5 py-2.5 text-sm font-semibold text-primary transition-smooth hover:bg-secondary disabled:opacity-60"
           disabled={loading}
         >
           <RefreshCw
@@ -95,7 +95,7 @@ export default function BalancesSummary() {
 
       <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
         <aside className="space-y-5">
-          <div className="rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 p-6 text-white shadow-xl shadow-orange-600/25">
+          <div className="rounded-xl bg-gradient-to-br from-primary to-accent p-6 text-primary-foreground shadow-xl shadow-primary/25 transition-smooth">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
               <Wallet size={24} />
             </div>
@@ -107,9 +107,9 @@ export default function BalancesSummary() {
               everyone&apos;s balances.
             </p>
           </div>
-          <div className="flex gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-            <Info size={20} className="shrink-0 text-orange-600" />
-            <p className="text-sm text-stone-500">
+          <div className="flex gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+            <Info size={20} className="shrink-0 text-primary" />
+            <p className="text-sm text-muted-foreground">
               Follow these transfers to clear all outstanding amounts in the
               group.
             </p>
@@ -117,19 +117,19 @@ export default function BalancesSummary() {
         </aside>
 
         <section>
-          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-stone-500">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Active settlements
           </h2>
 
           {loading && (
-            <div className="py-12 text-center text-stone-500">
+            <div className="py-12 text-center text-muted-foreground">
               Calculating settlements...
             </div>
           )}
 
           {!loading && settlements.length === 0 && !error && (
-            <div className="rounded-xl border border-stone-200 bg-white p-12 text-center shadow-sm">
-              <p className="text-stone-500">
+            <div className="rounded-xl border border-border bg-card p-12 text-center shadow-sm">
+              <p className="text-muted-foreground">
                 No settlements yet. Add some expenses first.
               </p>
             </div>
@@ -137,13 +137,13 @@ export default function BalancesSummary() {
 
           <div className="space-y-5">
             {settlements.map((item, index) => (
-              <div key={index} className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+              <div key={index} className="rounded-xl border border-border bg-card p-6 shadow-sm transition-smooth">
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                   <div className="flex flex-1 flex-col items-center text-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
                       <UserCircle2 size={28} />
                     </div>
-                    <div className="mt-2 font-semibold text-stone-900">
+                    <div className="mt-2 font-semibold text-foreground">
                       {item.sender}
                     </div>
                     <div className="text-xs font-semibold uppercase text-red-600">
@@ -151,22 +151,22 @@ export default function BalancesSummary() {
                     </div>
                   </div>
                   <div className="flex flex-1.5 flex-col items-center">
-                    <div className="text-xl font-extrabold text-orange-600 sm:text-2xl">
+                    <div className="text-xl font-extrabold text-primary sm:text-2xl">
                       ₹{item.amount.toLocaleString()}
                     </div>
                     <div className="flex w-full items-center justify-center py-2">
-                      <div className="h-px flex-1 bg-orange-200" />
-                      <div className="rounded-full bg-white px-2 shadow-sm">
-                        <ArrowRight size={20} className="text-orange-600" />
+                      <div className="h-px flex-1 bg-primary/30" />
+                      <div className="rounded-full bg-card px-2 shadow-sm">
+                        <ArrowRight size={20} className="text-primary" />
                       </div>
-                      <div className="h-px flex-1 bg-orange-200" />
+                      <div className="h-px flex-1 bg-primary/30" />
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col items-center text-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                       <UserCircle2 size={28} />
                     </div>
-                    <div className="mt-2 font-semibold text-stone-900">
+                    <div className="mt-2 font-semibold text-foreground">
                       {item.receiver}
                     </div>
                     <div className="text-xs font-semibold uppercase text-emerald-600">
@@ -174,7 +174,7 @@ export default function BalancesSummary() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 px-4 py-3 text-center text-sm text-stone-600">
+                <div className="mt-4 rounded-lg border-l-4 border-primary bg-secondary/50 px-4 py-3 text-center text-sm text-foreground">
                   {item.statement}
                 </div>
               </div>
