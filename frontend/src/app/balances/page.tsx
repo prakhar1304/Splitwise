@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { expenseApi } from "@/utils/api";
-import { TrendingUp, Info, RefreshCw, ArrowUpCircle, ArrowDownCircle, Wallet } from "lucide-react";
+import { TrendingUp, Info, RefreshCw, ArrowRight, Wallet, UserCircle2 } from "lucide-react";
+
+interface Settlement {
+    sender: string;
+    receiver: string;
+    amount: number;
+    statement: string;
+}
 
 export default function BalancesSummary() {
-    const [balances, setBalances] = useState<string[]>([]);
+    const [settlements, setSettlements] = useState<Settlement[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -13,11 +20,10 @@ export default function BalancesSummary() {
         try {
             setLoading(true);
             const response = await expenseApi.getBalances();
-            // FIX: The backend now returns an ApiResponse object, so we need response.data
             if (response && response.data) {
-                setBalances(response.data);
+                setSettlements(response.data);
             } else {
-                setBalances([]);
+                setSettlements([]);
             }
             setError("");
         } catch (err: any) {
@@ -32,23 +38,12 @@ export default function BalancesSummary() {
         fetchBalances();
     }, []);
 
-    // Helper to parse the new "Simple Balance" strings from backend
-    const parseStatus = (text: string) => {
-        if (text.includes("owes")) {
-            const [name, amount] = text.split(" owes ₹");
-            return { name, amount, type: 'owe' };
-        } else {
-            const [name, amount] = text.split(" should receive ₹");
-            return { name, amount, type: 'receive' };
-        }
-    };
-
     return (
         <div className="fade-in">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
                 <div>
-                    <h1 style={{ margin: 0 }}>Net Balances</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Overall status of each group member</p>
+                    <h1 style={{ margin: 0 }}>Settlements</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Optimal way to settle all group debts</p>
                 </div>
                 <button
                     onClick={fetchBalances}
@@ -79,9 +74,9 @@ export default function BalancesSummary() {
                                 <Wallet size={24} />
                             </div>
                             <div>
-                                <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem' }}>Individual Status</h3>
+                                <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem' }}>Optimized Split</h3>
                                 <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', opacity: 0.9, lineHeight: 1.6 }}>
-                                    This shows the total net amount each person is owed or owes to the group.
+                                    Our algorithm calculates the minimum number of transactions needed to settle everyone's balances.
                                 </p>
                             </div>
                         </div>
@@ -90,67 +85,75 @@ export default function BalancesSummary() {
                     <div className="card" style={{ marginTop: '1.5rem', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                         <Info size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            Positive balance means you spent more than your share. Negative means you owe the group.
+                            Follow these simple transfers to clear all outstanding amounts in the group.
                         </p>
                     </div>
                 </aside>
 
                 <section className="balances-list">
-                    <h2 style={{ fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Group Standings</h2>
+                    <h2 style={{ fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Active Settlements</h2>
 
-                    {loading && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Calculating standings...</div>}
+                    {loading && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Calculating settlements...</div>}
 
-                    {!loading && balances.length === 0 && !error && (
+                    {!loading && settlements.length === 0 && !error && (
                         <div className="card" style={{ textAlign: 'center', padding: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                             <p style={{ color: 'var(--text-muted)' }}>No data available. Add some expenses first!</p>
                         </div>
                     )}
 
-                    {balances.map((text, index) => {
-                        const { name, amount, type } = parseStatus(text);
-                        const isOwe = type === 'owe';
-
-                        return (
-                            <div key={index} className="card" style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '1rem',
-                                borderLeft: `6px solid ${isOwe ? '#EF4444' : '#10B981'}`
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{
-                                        width: '40px',
-                                        height: '40px',
-                                        borderRadius: '10px',
-                                        background: isOwe ? '#FEF2F2' : '#ECFDF5',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: isOwe ? '#EF4444' : '#10B981'
-                                    }}>
-                                        {isOwe ? <ArrowDownCircle size={24} /> : <ArrowUpCircle size={24} />}
+                    {settlements.map((item, index) => (
+                        <div key={index} className="card" style={{
+                            marginBottom: '1rem',
+                            padding: '1.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                                {/* Sender */}
+                                <div style={{ flex: 1, textAlign: 'center' }}>
+                                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#FEE2E2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem' }}>
+                                            <UserCircle2 size={32} />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{name}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                            {isOwe ? 'Owes the group' : 'Should receive'}
+                                    <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem' }}>{item.sender}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#EF4444', textTransform: 'uppercase', fontWeight: 600 }}>Debtor</div>
+                                </div>
+
+                                {/* Arrow & Amount */}
+                                <div style={{ flex: 1.5, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '4px' }}>
+                                        ₹{item.amount.toLocaleString()}
+                                    </div>
+                                    <div style={{ width: '100%', height: '2px', background: 'rgba(255, 140, 0, 0.1)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <div style={{ background: 'var(--bg-warm)', padding: '0 8px' }}>
+                                            <ArrowRight size={20} color="var(--primary)" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{
-                                        fontSize: '1.4rem',
-                                        fontWeight: 800,
-                                        color: isOwe ? '#EF4444' : '#10B981'
-                                    }}>
-                                        ₹{parseFloat(amount).toLocaleString()}
+                                {/* Receiver */}
+                                <div style={{ flex: 1, textAlign: 'center' }}>
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem' }}>
+                                        <UserCircle2 size={32} />
                                     </div>
+                                    <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem' }}>{item.receiver}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#10B981', textTransform: 'uppercase', fontWeight: 600 }}>Creditor</div>
                                 </div>
                             </div>
-                        );
-                    })}
+
+                            <div style={{
+                                marginTop: '1.25rem',
+                                padding: '0.75rem',
+                                background: 'var(--bg-warm)',
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                color: 'var(--text-muted)',
+                                textAlign: 'center',
+                                borderLeft: '4px solid var(--primary)'
+                            }}>
+                                {item.statement}
+                            </div>
+                        </div>
+                    ))}
                 </section>
             </div>
 
@@ -163,7 +166,7 @@ export default function BalancesSummary() {
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes rotate {
-          from { transform: rotate(0deg); } }
+          from { transform: rotate(0deg); } 
           to { transform: rotate(360deg); }
         }
         .spin {

@@ -39,38 +39,56 @@ const getBalances = asyncHandler(async (req, res) => {
     const expenses = await Expense.find();
     const balances = {};
 
-    // STEP 1: Calculate balance of each person
+    // STEP 1: Calculate net balance for each person
     expenses.forEach(expense => {
         const share = expense.amount / expense.participants.length;
 
-        // payer gets money back
-        balances[expense.paidBy] =
-            (balances[expense.paidBy] || 0) + expense.amount;
+        balances[expense.paidBy] = (balances[expense.paidBy] || 0) + expense.amount;
 
-        // participants owe their share
         expense.participants.forEach(person => {
-            balances[person] =
-                (balances[person] || 0) - share;
+            balances[person] = (balances[person] || 0) - share;
         });
     });
 
-    // STEP 2: Convert balance object to readable messages
-    const result = [];
+    // STEP 2: Separate into creditors and debtors
+    const creditors = [];
+    const debtors = [];
 
     for (const person in balances) {
-        if (balances[person] < 0) {
-            result.push(
-                `${person} owes ₹${Math.abs(balances[person]).toFixed(2)}`
-            );
-        } else if (balances[person] > 0) {
-            result.push(
-                `${person} should receive ₹${balances[person].toFixed(2)}`
-            );
+        if (balances[person] > 0.01) {
+            creditors.push({ name: person, amount: balances[person] });
+        } else if (balances[person] < -0.01) {
+            debtors.push({ name: person, amount: Math.abs(balances[person]) });
         }
     }
 
+    // Sort to handle largest amounts first 
+    creditors.sort((a, b) => b.amount - a.amount);
+    debtors.sort((a, b) => b.amount - a.amount);
+
+    // STEP 3: Match debtors with creditors
+    const settlements = [];
+    let i = 0, j = 0;
+
+    while (i < debtors.length && j < creditors.length) {
+        const amount = Math.min(debtors[i].amount, creditors[j].amount);
+
+        settlements.push({
+            sender: debtors[i].name,
+            receiver: creditors[j].name,
+            amount: parseFloat(amount.toFixed(2)),
+            statement: `${debtors[i].name} owes ${creditors[j].name} ₹${amount.toFixed(2)}`
+        });
+
+        debtors[i].amount -= amount;
+        creditors[j].amount -= amount;
+
+        if (debtors[i].amount < 0.01) i++;
+        if (creditors[j].amount < 0.01) j++;
+    }
+
     return res.status(200).json(
-        new ApiResponse(200, result, "Simple balances calculated")
+        new ApiResponse(200, settlements, "Settlements calculated successfully")
     );
 });
 
