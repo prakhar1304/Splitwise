@@ -40,67 +40,76 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-6 py-16 sm:px-8">
-      <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-8 shadow-lg">
-        <h1 className="text-2xl font-bold text-stone-900">Sign up</h1>
-        <p className="mt-1 text-stone-500">
-          Create an account to start splitting expenses
-        </p>
+      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-secondary p-8 shadow-lg transition-smooth before:absolute before:right-2 before:top-2 before:h-24 before:w-24 before:rounded-full before:bg-primary before:opacity-20 before:blur-2xl before:content-[''] after:absolute after:-right-4 after:-top-4 after:h-32 after:w-32 after:rounded-full after:bg-accent after:opacity-10 after:blur-2xl after:content-['']">
+        <div className="relative z-10 animate-slide-up">
+          <h1 className="text-2xl font-bold text-foreground">Sign up</h1>
+          <p className="mt-1 text-muted-foreground">
+            Create an account to start splitting expenses
+          </p>
 
-        {error && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-stone-600">Name</label>
-            <input
-              type="text"
-              className="w-full rounded-xl border-2 border-stone-200 px-4 py-3 text-base outline-none transition-all focus:border-orange-600 focus:ring-4 focus:ring-orange-600/15"
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-stone-600">Email</label>
-            <input
-              type="email"
-              className="w-full rounded-xl border-2 border-stone-200 px-4 py-3 text-base outline-none transition-all focus:border-orange-600 focus:ring-4 focus:ring-orange-600/15"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-stone-600">Password (min 6 characters)</label>
-            <input
-              type="password"
-              className="w-full rounded-xl border-2 border-stone-200 px-4 py-3 text-base outline-none transition-all focus:border-orange-600 focus:ring-4 focus:ring-orange-600/15"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-          <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white shadow-lg shadow-orange-600/30 transition-all hover:bg-orange-700 hover:shadow-xl hover:shadow-orange-600/40 active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed" disabled={loading}>
-            {loading ? "Creating account..." : "Create account"}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-muted-foreground">Name</label>
+              <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-30 before:blur-lg before:content-['']">
+                <input
+                  type="text"
+                  className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-muted-foreground">Email</label>
+              <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-30 before:blur-lg before:content-['']">
+                <input
+                  type="email"
+                  className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-muted-foreground">Password (min 6 characters)</label>
+              <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-30 before:blur-lg before:content-['']">
+                <input
+                  type="password"
+                  className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:opacity-90 hover:shadow-xl active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={loading}
+            >
+              {loading ? "Creating account..." : "Create account"}
+            </button>
+          </form>
 
-        <p className="mt-6 text-sm text-stone-500">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-orange-600 hover:text-orange-700"
-          >
-            Log in
-          </Link>
-        </p>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="font-semibold text-accent hover:underline">
+              Log in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

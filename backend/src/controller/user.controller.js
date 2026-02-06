@@ -1,3 +1,5 @@
+import { createAvatar } from "@dicebear/core";
+import { lorelei } from "@dicebear/collection";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiRes.js";
@@ -109,4 +111,37 @@ export const getMe = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, { user }, "Profile retrieved"));
+});
+
+
+
+export const getAllUsers = asyncHandler(async (req, res) => {
+  
+  const currentUser = req.user;
+  const users = await User.find(
+    {
+      _id: { $ne: currentUser._id }
+    }
+  ).select("-password -refreshToken");
+
+  if (!users) {
+    throw new ApiError(404, "Users not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
+});
+
+// Public: no auth. Generates deterministic avatar from user id so <img src="..."> works.
+export const getUserAvatar = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    throw new ApiError(400, "User id is required");
+  }
+  const avatar = createAvatar(lorelei, {
+    seed: id,
+    size: 128,
+    randomizeIds: true,
+  });
+  const svg = avatar.toString();
+  res.set("Content-Type", "image/svg+xml").send(svg);
 });

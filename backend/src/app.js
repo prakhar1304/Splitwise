@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import expenseRouter from "./router/expenses.router.js";
 import userRouter from "./router/user.router.js";
+import groupRouter from "./router/group.router.js";
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 
 app.use("/api/users", userRouter);
+app.use("/api/groups", groupRouter);
 app.use("/api/expenses", expenseRouter);
 
 app.use((err, req, res, next) => {
