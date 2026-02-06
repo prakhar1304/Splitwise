@@ -1,22 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { expenseApi, Expense } from "@/utils/api";
-import { Trash2, User, Users, Calendar, IndianRupee, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { expenseApi, Expense, isNetworkError, API_BASE_URL } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
+import {
+  Trash2,
+  User,
+  Users,
+  Calendar,
+  IndianRupee,
+  RefreshCw,
+} from "lucide-react";
 
 export default function Dashboard() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchExpenses = async () => {
+    if (!user) return;
     try {
       setLoading(true);
       const response = await expenseApi.getAllExpenses();
-      setExpenses(response.data);
+      const list = (response as { data?: Expense[] }).data ?? [];
+      setExpenses(Array.isArray(list) ? list : []);
       setError("");
-    } catch (err: any) {
-      setError("Failed to fetch expenses. Make sure the backend is running.");
+    } catch (err: unknown) {
+      const isNetwork = isNetworkError(err);
+      setError(
+        isNetwork
+          ? `Cannot reach the backend. Start it with "npm run dev" in the backend folder (default: ${API_BASE_URL.replace("/api", "")}).`
+          : "Failed to fetch expenses. Make sure you're logged in and the backend is running."
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -24,130 +43,174 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchExpenses();
-  }, []);
+    if (!authLoading && !user) {
+      router.push("/login");
+      return;
+    }
+    if (user) fetchExpenses();
+  }, [user, authLoading]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      setDeletingId(id);
+      await expenseApi.deleteExpense(id);
+      setExpenses((prev) => prev.filter((e) => e._id !== id));
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Delete failed";
+      setError(msg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (authLoading || (!user && !authLoading)) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-stone-500">
+        Loading...
+      </div>
+    );
+  }
 
   return (
-    <div className="fade-in">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+      <header className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 style={{ margin: 0 }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Manage your group expenses with ease</p>
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
+            Dashboard
+          </h1>
+          <p className="mt-1 text-stone-500">
+            Manage your group expenses with ease
+          </p>
         </div>
         <button
+          type="button"
           onClick={fetchExpenses}
-          className="btn-primary"
-          style={{ width: 'auto', display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--bg-warm)', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none' }}
+          className="inline-flex w-auto shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-orange-600 bg-white px-5 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 disabled:opacity-60"
+          disabled={loading}
         >
-          <RefreshCw size={16} className={loading ? "spin" : ""} />
+          <RefreshCw
+            size={18}
+            className={loading ? "animate-spin" : ""}
+          />
           Refresh
         </button>
       </header>
 
       {error && (
-        <div className="card" style={{ background: '#FFF5F5', border: '1px solid #FED7D7', color: '#C53030' }}>
-          {error}
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
+          <p className="font-medium">{error}</p>
+          <p className="mt-2 text-sm text-amber-800 opacity-90">
+            Backend should run on port 5000 by default. Set{" "}
+            <code className="rounded bg-amber-100 px-1 py-0.5 text-xs">
+              NEXT_PUBLIC_API_URL
+            </code>{" "}
+            in the frontend if your API is at a different URL.
+          </p>
         </div>
       )}
 
-      <div className="grid-layout">
-        <aside className="stats-sidebar">
-          <div className="card" style={{ background: 'linear-gradient(135deg, #FFF 0%, var(--bg-warm) 100%)' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Total Group Spending</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)' }}>
-              <IndianRupee size={32} />
-              {expenses.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}
+      <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
+        <aside className="space-y-5">
+          <div className="rounded-xl border border-stone-200 bg-gradient-to-br from-orange-50/60 to-amber-50/40 p-6 shadow-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+              Total group spending
+            </h3>
+            <div className="mt-3 flex items-center gap-2 text-3xl font-extrabold text-orange-600">
+              <IndianRupee size={28} strokeWidth={2.5} />
+              {expenses
+                .reduce((acc, curr) => acc + curr.amount, 0)
+                .toLocaleString()}
             </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '1rem' }}>Across {expenses.length} recent transactions</p>
-          </div>
-
-          <div className="card" style={{ border: '1px dashed var(--primary)', background: 'transparent' }}>
-            <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Real-time Sync</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Dashboard is now connected to your MongoDB database for persistence.</p>
+            <p className="mt-2 text-sm text-stone-500">
+              Across {expenses.length} transaction
+              {expenses.length !== 1 ? "s" : ""}
+            </p>
           </div>
         </aside>
 
-        <section className="expenses-list">
-          <h2 style={{ fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Recent Expenses</h2>
+        <section>
+          <h2 className="mb-6 text-xs font-semibold uppercase tracking-wider text-stone-500">
+            Recent expenses
+          </h2>
 
-          {loading && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading expenses...</div>}
-
-          {!loading && expenses.length === 0 && !error && (
-            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-              <p style={{ color: 'var(--text-muted)' }}>No expenses found. Start by adding one!</p>
+          {loading && (
+            <div className="py-12 text-center text-stone-500">
+              Loading expenses...
             </div>
           )}
 
-          {expenses.map((expense) => (
-            <div key={expense._id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{expense.name || expense.description}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    <Calendar size={14} />
-                    <span>{new Date(expense.createdAt).toLocaleDateString()}</span>
+          {!loading && expenses.length === 0 && !error && (
+            <div className="rounded-xl border border-stone-200 bg-white p-12 text-center shadow-sm">
+              <p className="text-stone-500">
+                No expenses yet. Add one to get started.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            {expenses.map((expense) => (
+              <div key={expense._id} className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-lg hover:shadow-orange-500/10">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-stone-900">
+                      {expense.name || expense.description}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-2 text-sm text-stone-500">
+                      <Calendar size={14} />
+                      {expense.createdAt
+                        ? new Date(expense.createdAt).toLocaleDateString()
+                        : "—"}
+                    </div>
                   </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '1.5rem',
-                    fontWeight: 700,
-                    color: 'var(--primary)'
-                  }}>
-                    <IndianRupee size={20} strokeWidth={3} />
+                  <div className="flex items-center text-xl font-bold text-orange-600 sm:text-2xl">
+                    <IndianRupee size={20} strokeWidth={2.5} />
                     {expense.amount.toLocaleString()}
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Paid By</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
-                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255, 140, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={12} color="var(--primary)" />
+                <div className="mt-4 grid gap-4 border-t border-stone-100 pt-4 sm:grid-cols-2">
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-400">
+                      Paid by
+                    </span>
+                    <div className="flex items-center gap-2 font-medium text-stone-700">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                        <User size={12} />
+                      </div>
+                      {expense.paidBy}
                     </div>
-                    {expense.paidBy}
+                  </div>
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-400">
+                      Participants
+                    </span>
+                    <div className="flex items-center gap-2 font-medium text-stone-700">
+                      <Users size={16} className="text-stone-400" />
+                      {Array.isArray(expense.participants)
+                        ? expense.participants.join(", ")
+                        : ""}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Participants</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
-                    <Users size={16} color="var(--text-muted)" />
-                    <span>{expense.participants.map(p => typeof p === 'string' ? p : p.name).join(', ')}</span>
-                  </div>
-                </div>
-              </div>
 
-              <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn-delete" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+                    onClick={() => handleDelete(expense._id)}
+                    disabled={deletingId === expense._id}
+                  >
+                    <Trash2 size={16} />
+                    {deletingId === expense._id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       </div>
-
-      <style jsx>{`
-        .fade-in {
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .spin {
-          animation: rotate 1s linear infinite;
-        }
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
