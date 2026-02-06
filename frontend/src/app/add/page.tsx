@@ -11,6 +11,7 @@ export default function AddExpense() {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState("");
 
+    const [includePaidBy, setIncludePaidBy] = useState(true);
     const [formData, setFormData] = useState({
         name: "",
         amount: "",
@@ -24,12 +25,21 @@ export default function AddExpense() {
         setError("");
 
         try {
+            let participantList = formData.participants.split(",").map(p => p.trim()).filter(p => p !== "");
+
+            // Add paidBy to participants if toggle is ON and not already included
+            if (includePaidBy && formData.paidBy) {
+                if (!participantList.some(p => p.toLowerCase() === formData.paidBy.toLowerCase())) {
+                    participantList.push(formData.paidBy);
+                }
+            }
+
             const payload = {
                 name: formData.name,
                 amount: Number(formData.amount),
-                description: formData.name, // using name as description for simplicity
+                description: formData.name,
                 paidBy: formData.paidBy,
-                participants: formData.participants.split(",").map(p => p.trim()).filter(p => p !== "")
+                participants: participantList
             };
 
             await expenseApi.createExpense(payload);
@@ -141,18 +151,32 @@ export default function AddExpense() {
                                 />
                             </div>
 
+                            <div className="form-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(255, 140, 0, 0.05)', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <User size={16} color="var(--primary)" />
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Include payer in participants</span>
+                                </div>
+                                <label className="switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={includePaidBy}
+                                        onChange={(e) => setIncludePaidBy(e.target.checked)}
+                                    />
+                                    <span className="slider round"></span>
+                                </label>
+                            </div>
+
                             <div className="form-group">
                                 <label className="form-label">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <Users size={16} />
-                                        Participants
+                                        Other Participants
                                     </div>
                                 </label>
                                 <input
                                     type="text"
                                     className="form-input"
-                                    placeholder="Amit, Rahul, Neha"
-                                    required
+                                    placeholder="Rahul, Neha (if any)"
                                     value={formData.participants}
                                     onChange={(e) => setFormData({ ...formData, participants: e.target.value })}
                                 />
