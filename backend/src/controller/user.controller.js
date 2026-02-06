@@ -10,7 +10,8 @@ const cookieOptions = {
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
-
+  console.log("registerUser", req.body);
+  
   if (!name || !email || !password) {
     throw new ApiError(400, "Name, email and password are required");
   }

@@ -46,11 +46,10 @@ const userSchema = new Schema(
 );
 
 
-//  Hash Password Before Save
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+// Hash password before save (async hook – no next in Mongoose 9)
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
-  next();
 });
 
 

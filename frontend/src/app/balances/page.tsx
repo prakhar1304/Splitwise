@@ -1,178 +1,187 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { expenseApi } from "@/utils/api";
-import { TrendingUp, Info, RefreshCw, ArrowRight, Wallet, UserCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { expenseApi, isNetworkError, API_BASE_URL } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
+import {
+  RefreshCw,
+  ArrowRight,
+  Wallet,
+  UserCircle2,
+  Info,
+} from "lucide-react";
 
 interface Settlement {
-    sender: string;
-    receiver: string;
-    amount: number;
-    statement: string;
+  sender: string;
+  receiver: string;
+  amount: number;
+  statement: string;
 }
 
 export default function BalancesSummary() {
-    const [settlements, setSettlements] = useState<Settlement[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    const fetchBalances = async () => {
-        try {
-            setLoading(true);
-            const response = await expenseApi.getBalances();
-            if (response && response.data) {
-                setSettlements(response.data);
-            } else {
-                setSettlements([]);
-            }
-            setError("");
-        } catch (err: any) {
-            setError("Failed to fetch group balances.");
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchBalances = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const response = await expenseApi.getBalances();
+      const data = (response as { data?: Settlement[] }).data;
+      setSettlements(Array.isArray(data) ? data : []);
+      setError("");
+    } catch (err: unknown) {
+      setError(
+        isNetworkError(err)
+          ? `Cannot reach the backend. Start it with "npm run dev" in the backend folder (default: ${API_BASE_URL.replace("/api", "")}).`
+          : "Failed to fetch group balances. Make sure you're logged in."
+      );
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchBalances();
-    }, []);
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+      return;
+    }
+    if (user) fetchBalances();
+  }, [user, authLoading]);
 
+  if (authLoading || (!user && !authLoading)) {
     return (
-        <div className="fade-in">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
-                <div>
-                    <h1 style={{ margin: 0 }}>Settlements</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Optimal way to settle all group debts</p>
-                </div>
-                <button
-                    onClick={fetchBalances}
-                    className="btn-primary"
-                    style={{ width: 'auto', display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--bg-warm)', color: 'var(--primary)', border: '1px solid var(--primary)', boxShadow: 'none' }}
-                >
-                    <RefreshCw size={16} className={loading ? "spin" : ""} />
-                    Refresh
-                </button>
-            </header>
-
-            {error && (
-                <div className="card" style={{ background: '#FFF5F5', border: '1px solid #FED7D7', color: '#C53030', marginBottom: '2rem' }}>
-                    {error}
-                </div>
-            )}
-
-            <div className="grid-layout">
-                <aside>
-                    <div className="card" style={{
-                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-                        color: 'white',
-                        border: 'none',
-                        height: 'fit-content'
-                    }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.2)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Wallet size={24} />
-                            </div>
-                            <div>
-                                <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem' }}>Optimized Split</h3>
-                                <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', opacity: 0.9, lineHeight: 1.6 }}>
-                                    Our algorithm calculates the minimum number of transactions needed to settle everyone's balances.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="card" style={{ marginTop: '1.5rem', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                        <Info size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            Follow these simple transfers to clear all outstanding amounts in the group.
-                        </p>
-                    </div>
-                </aside>
-
-                <section className="balances-list">
-                    <h2 style={{ fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Active Settlements</h2>
-
-                    {loading && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Calculating settlements...</div>}
-
-                    {!loading && settlements.length === 0 && !error && (
-                        <div className="card" style={{ textAlign: 'center', padding: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                            <p style={{ color: 'var(--text-muted)' }}>No data available. Add some expenses first!</p>
-                        </div>
-                    )}
-
-                    {settlements.map((item, index) => (
-                        <div key={index} className="card" style={{
-                            marginBottom: '1rem',
-                            padding: '1.5rem'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                                {/* Sender */}
-                                <div style={{ flex: 1, textAlign: 'center' }}>
-                                    <div style={{ position: 'relative', display: 'inline-block' }}>
-                                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#FEE2E2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem' }}>
-                                            <UserCircle2 size={32} />
-                                        </div>
-                                    </div>
-                                    <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem' }}>{item.sender}</div>
-                                    <div style={{ fontSize: '0.7rem', color: '#EF4444', textTransform: 'uppercase', fontWeight: 600 }}>Debtor</div>
-                                </div>
-
-                                {/* Arrow & Amount */}
-                                <div style={{ flex: 1.5, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '4px' }}>
-                                        ₹{item.amount.toLocaleString()}
-                                    </div>
-                                    <div style={{ width: '100%', height: '2px', background: 'rgba(255, 140, 0, 0.1)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <div style={{ background: 'var(--bg-warm)', padding: '0 8px' }}>
-                                            <ArrowRight size={20} color="var(--primary)" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Receiver */}
-                                <div style={{ flex: 1, textAlign: 'center' }}>
-                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ECFDF5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem' }}>
-                                        <UserCircle2 size={32} />
-                                    </div>
-                                    <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem' }}>{item.receiver}</div>
-                                    <div style={{ fontSize: '0.7rem', color: '#10B981', textTransform: 'uppercase', fontWeight: 600 }}>Creditor</div>
-                                </div>
-                            </div>
-
-                            <div style={{
-                                marginTop: '1.25rem',
-                                padding: '0.75rem',
-                                background: 'var(--bg-warm)',
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
-                                color: 'var(--text-muted)',
-                                textAlign: 'center',
-                                borderLeft: '4px solid var(--primary)'
-                            }}>
-                                {item.statement}
-                            </div>
-                        </div>
-                    ))}
-                </section>
-            </div>
-
-            <style jsx>{`
-        .fade-in {
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes rotate {
-          from { transform: rotate(0deg); } 
-          to { transform: rotate(360deg); }
-        }
-        .spin {
-          animation: rotate 1s linear infinite;
-        }
-      `}</style>
-        </div>
+      <div className="flex min-h-[40vh] items-center justify-center text-stone-500">
+        Loading...
+      </div>
     );
+  }
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+      <header className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">
+            Settlements
+          </h1>
+          <p className="mt-1 text-stone-500">
+            Optimal way to settle all group debts
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={fetchBalances}
+          className="inline-flex w-auto shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-orange-600 bg-white px-5 py-2.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 disabled:opacity-60"
+          disabled={loading}
+        >
+          <RefreshCw
+            size={18}
+            className={loading ? "animate-spin" : ""}
+          />
+          Refresh
+        </button>
+      </header>
+
+      {error && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
+          <p className="font-medium">{error}</p>
+        </div>
+      )}
+
+      <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
+        <aside className="space-y-5">
+          <div className="rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 p-6 text-white shadow-xl shadow-orange-600/25">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
+              <Wallet size={24} />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold text-white">
+              Optimized split
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-white/90">
+              The algorithm uses the minimum number of transactions to settle
+              everyone&apos;s balances.
+            </p>
+          </div>
+          <div className="flex gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+            <Info size={20} className="shrink-0 text-orange-600" />
+            <p className="text-sm text-stone-500">
+              Follow these transfers to clear all outstanding amounts in the
+              group.
+            </p>
+          </div>
+        </aside>
+
+        <section>
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-stone-500">
+            Active settlements
+          </h2>
+
+          {loading && (
+            <div className="py-12 text-center text-stone-500">
+              Calculating settlements...
+            </div>
+          )}
+
+          {!loading && settlements.length === 0 && !error && (
+            <div className="rounded-xl border border-stone-200 bg-white p-12 text-center shadow-sm">
+              <p className="text-stone-500">
+                No settlements yet. Add some expenses first.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            {settlements.map((item, index) => (
+              <div key={index} className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                  <div className="flex flex-1 flex-col items-center text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+                      <UserCircle2 size={28} />
+                    </div>
+                    <div className="mt-2 font-semibold text-stone-900">
+                      {item.sender}
+                    </div>
+                    <div className="text-xs font-semibold uppercase text-red-600">
+                      Debtor
+                    </div>
+                  </div>
+                  <div className="flex flex-1.5 flex-col items-center">
+                    <div className="text-xl font-extrabold text-orange-600 sm:text-2xl">
+                      ₹{item.amount.toLocaleString()}
+                    </div>
+                    <div className="flex w-full items-center justify-center py-2">
+                      <div className="h-px flex-1 bg-orange-200" />
+                      <div className="rounded-full bg-white px-2 shadow-sm">
+                        <ArrowRight size={20} className="text-orange-600" />
+                      </div>
+                      <div className="h-px flex-1 bg-orange-200" />
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col items-center text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                      <UserCircle2 size={28} />
+                    </div>
+                    <div className="mt-2 font-semibold text-stone-900">
+                      {item.receiver}
+                    </div>
+                    <div className="text-xs font-semibold uppercase text-emerald-600">
+                      Creditor
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 px-4 py-3 text-center text-sm text-stone-600">
+                  {item.statement}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
 }
