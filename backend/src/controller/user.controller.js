@@ -28,8 +28,10 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({ name, email, password });
+
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
+
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
@@ -69,6 +71,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
+  
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 

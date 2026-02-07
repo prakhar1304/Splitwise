@@ -2,7 +2,6 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-// USER SCHEMA
 const userSchema = new Schema(
   {
     name: {
@@ -13,7 +12,7 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: true,
-      // unique: true, // ✅ Best Practice: Ensure uniqueness
+      unique: true, 
       lowercase: true,
       trim: true,
     },
@@ -21,19 +20,6 @@ const userSchema = new Schema(
       type: String,
       required: true,
       minlength: 6,
-    },
-    role: {
-      type: String,
-      enum: ["user", "admin", "vendor"], // ✅ Add roles for scalability
-      default: "user",
-    },
-    phone: {
-      type: String,
-      // required: true,
-      // match: /^[0-9]{10}$/, // ✅ Optional validation
-    },
-    address: {
-      type: String,
     },
     refreshToken: {
       type: String,

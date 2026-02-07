@@ -42,10 +42,13 @@ const createExpense = asyncHandler(async (req, res) => {
 
   if (groupId) {
     const group = await Group.findById(groupId);
+
     if (!group) throw new ApiError(404, 'Group not found');
+
     const isMember = group.members.some(
       (m) => m.toString() === req.user._id.toString()
     );
+
     if (!isMember)
       throw new ApiError(403, 'You are not a member of this group');
 
@@ -54,15 +57,19 @@ const createExpense = asyncHandler(async (req, res) => {
 
     if (stype === 'equal') {
       const pids = Array.isArray(participantIds) ? participantIds : [];
+
       if (pids.length === 0) {
         throw new ApiError(
           400,
           'For group equal split, participantIds (user IDs) are required'
         );
       }
+
       const share = parseFloat((numAmount / pids.length).toFixed(2));
+
       finalSplitDetails = pids.map((uid) => ({ userId: uid, amount: share }));
-    } else if (stype === 'unequal' || stype === 'percentage') {
+    } else if (stype === 'unequal' || stype === 'percentage') 
+      {
       const details = Array.isArray(splitDetails) ? splitDetails : [];
       const sum = details.reduce((s, d) => s + (Number(d.amount) || 0), 0);
       if (Math.abs(sum - numAmount) > 0.02) {
@@ -80,7 +87,10 @@ const createExpense = asyncHandler(async (req, res) => {
     }
   } else {
     finalPaidBy = paidBy || req.user._id;
-    if (!participantIds?.length && (!splitDetails || splitDetails.length === 0)) {
+    if (
+      !participantIds?.length &&
+      (!splitDetails || splitDetails.length === 0)
+    ) {
       throw new ApiError(
         400,
         'participantIds or splitDetails required for non-group expense'
@@ -93,10 +103,7 @@ const createExpense = asyncHandler(async (req, res) => {
         amount: share,
       }));
     } else {
-      const sum = splitDetails.reduce(
-        (s, d) => s + (Number(d.amount) || 0),
-        0
-      );
+      const sum = splitDetails.reduce((s, d) => s + (Number(d.amount) || 0), 0);
       if (Math.abs(sum - numAmount) > 0.02) {
         throw new ApiError(
           400,
@@ -130,9 +137,7 @@ const createExpense = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(
-      new ApiResponse(201, populated, 'Expense created successfully')
-    );
+    .json(new ApiResponse(201, populated, 'Expense created successfully'));
 });
 
 /**
@@ -352,9 +357,7 @@ const getBalances = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, result, 'Settlements calculated successfully')
-    );
+    .json(new ApiResponse(200, result, 'Settlements calculated successfully'));
 });
 
 const getBalancesByGroup = asyncHandler(async (req, res) => {

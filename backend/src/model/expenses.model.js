@@ -14,7 +14,7 @@ const splitDetailSchema = new Schema(
 );
 
 /**
- * Expense schema per PDF Level 3:
+ * Expense schema :
  * - paidBy: who paid the full bill (user ID)
  * - splitDetails: [{ userId, amount }] = fair share per person
  */
