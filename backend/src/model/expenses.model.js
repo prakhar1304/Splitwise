@@ -1,5 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 
+/**
+ * splitDetails: each person's fair share (how much they SHOULD pay).
+ * amount = fair share, stored as number.
+ * For percentage split: convert to amount before saving.
+ */
 const splitDetailSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -8,12 +13,13 @@ const splitDetailSchema = new Schema(
   { _id: false }
 );
 
+/**
+ * Expense schema per PDF Level 3:
+ * - paidBy: who paid the full bill (user ID)
+ * - splitDetails: [{ userId, amount }] = fair share per person
+ */
 const expenseSchema = new Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
     description: {
       type: String,
       default: "",
@@ -23,24 +29,15 @@ const expenseSchema = new Schema(
       required: true,
     },
     paidBy: {
-      type: String,
-      required: true,
-    },
-    paidByUser: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      default: null,
-    },
-    participants: {
-      type: [String],
-      default: [],
+      required: true,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
-    // Level 3: group and advanced split
     groupId: {
       type: Schema.Types.ObjectId,
       ref: "Group",

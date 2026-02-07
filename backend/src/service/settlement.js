@@ -49,13 +49,13 @@ function optimizeSettlements(balances, options = {}) {
 /**
  * Build balance map (userId -> net balance) from expenses.
  * Each expense: payer gets +amount, each person in splitDetails gets -their share.
- * expenses: array of { paidByUser, amount, splitDetails: [{ userId, amount }] }.
+ * expenses: array of { paidBy, amount, splitDetails: [{ userId, amount }] }.
  */
 function computeBalancesFromExpenses(expenses) {
   const map = new Map(); // userId -> balance (positive = owed to them)
 
   for (const exp of expenses) {
-    const payerId = exp.paidByUser?.toString?.() ?? exp.paidByUser;
+    const payerId = exp.paidBy?.toString?.() ?? exp.paidBy;
     const amount = Number(exp.amount) || 0;
     if (payerId) {
       map.set(payerId, (map.get(payerId) || 0) + amount);
