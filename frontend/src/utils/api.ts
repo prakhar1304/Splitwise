@@ -50,25 +50,45 @@ export interface User {
 }
 
 export interface SplitDetail {
-  userId: string;
+  userId: string | { _id: string; name: string };
+  amount: number;
+}
+
+/** Helper to get participant name from split detail */
+export function getSplitDetailUserName(d: SplitDetail): string {
+  const u = d.userId;
+  return typeof u === "object" && u?.name ? u.name : String(u ?? "—");
+}
+
+export interface SplitDetailPopulated {
+  userId: { _id: string; name: string } | string;
   amount: number;
 }
 
 export interface Expense {
   _id: string;
-  name: string;
   description?: string;
   amount: number;
-  paidBy: string;
-  participants: string[];
-  createdBy?: string;
-  paidByUser?: string;
-  groupId?: string;
+  paidBy: { _id: string; name: string } | string;
+  createdBy?: { _id: string; name: string } | string;
+  groupId?: { _id: string; name: string } | string;
   category?: string;
   splitType?: "equal" | "unequal" | "percentage";
   splitDetails?: SplitDetail[];
   date?: string;
   createdAt?: string;
+}
+
+/** Helper to get paidBy display name */
+export function getPaidByName(expense: Expense): string {
+  const p = expense.paidBy;
+  return typeof p === "object" && p?.name ? p.name : String(p ?? "—");
+}
+
+/** Helper to get createdBy display name */
+export function getCreatedByName(expense: Expense): string {
+  const c = expense.createdBy;
+  return typeof c === "object" && c?.name ? c.name : String(c ?? "—");
 }
 
 export interface Group {
@@ -133,11 +153,12 @@ export const expenseApi = {
     return res.data;
   },
   createExpense: async (expenseData: {
-    name: string;
+    description: string;
     amount: number;
-    description?: string;
-    paidBy: string;
-    participants: string[];
+    paidBy?: string;
+    participantIds?: string[];
+    splitType?: "equal" | "unequal" | "percentage";
+    splitDetails?: SplitDetail[];
   }) => {
     const res = await api.post<ApiResponse<Expense>>("/expenses/", expenseData);
     return res.data;
@@ -145,12 +166,9 @@ export const expenseApi = {
   updateExpense: async (
     id: string,
     data: {
-      name?: string;
       description?: string;
       amount?: number;
       paidBy?: string;
-      paidByUser?: string;
-      participants?: string[];
       category?: string;
       splitType?: "equal" | "unequal" | "percentage";
       splitDetails?: SplitDetail[];
@@ -166,12 +184,21 @@ export const expenseApi = {
     return res.data;
   },
   getBalances: async () => {
-    const res = await api.get<
-      ApiResponse<Settlement[]>
-    >("/expenses/balances");
+    const res = await api.get<ApiResponse<Settlement[]>>("/expenses/balances");
+    return res.data;
+  },
+  getAnalytics: async () => {
+    const res = await api.get<ApiResponse<Analytics>>("/expenses/analytics");
     return res.data;
   },
 };
+
+export interface Analytics {
+  totalSpending: number;
+  expenseCount: number;
+  byMonth: { month: string; label: string; total: number }[];
+  byCategory: { name: string; total: number }[];
+}
 
 export const groupsApi = {
   createGroup: async (name: string, memberIds?: string[]) => {
@@ -206,11 +233,9 @@ export const groupsApi = {
     return res.data;
   },
   createGroupExpense: async (data: {
-    name: string;
+    description: string;
     amount: number;
-    description?: string;
     paidBy: string;
-    paidByUser: string;
     groupId: string;
     category?: string;
     splitType: "equal" | "unequal" | "percentage";

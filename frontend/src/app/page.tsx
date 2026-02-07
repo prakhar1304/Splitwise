@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { expenseApi, Expense, isNetworkError, API_BASE_URL } from "@/utils/api";
+import {
+  expenseApi,
+  Expense,
+  isNetworkError,
+  API_BASE_URL,
+  getPaidByName,
+  Analytics,
+} from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   Trash2,
@@ -12,32 +19,43 @@ import {
   IndianRupee,
   RefreshCw,
   Pencil,
+  Eye,
 } from "lucide-react";
 import AddExpenseForm from "@/components/AddExpenseForm";
+import ExpenseDetailModal from "@/components/ExpenseDetailModal";
 
 export default function Dashboard() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
 
   const fetchExpenses = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const response = await expenseApi.getAllExpenses();
-      const list = (response as { data?: Expense[] }).data ?? [];
+      const [expRes, analyticsRes] = await Promise.all([
+        expenseApi.getAllExpenses(),
+        expenseApi.getAnalytics(),
+      ]);
+      const list = (expRes as { data?: Expense[] }).data ?? [];
       setExpenses(Array.isArray(list) ? list : []);
+      const analyticsData = (analyticsRes as { data?: Analytics }).data ?? null;
+      setAnalytics(analyticsData);
       setError("");
     } catch (err: unknown) {
       const isNetwork = isNetworkError(err);
+      const apiMsg = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
       setError(
         isNetwork
           ? `Cannot reach the backend. Start it with "npm run dev" in the backend folder (default: ${API_BASE_URL.replace("/api", "")}).`
-          : "Failed to fetch expenses. Make sure you're logged in and the backend is running."
+          : apiMsg || "Failed to fetch expenses. Make sure you're logged in and the backend is running."
       );
       console.error(err);
     } finally {
@@ -118,19 +136,66 @@ export default function Dashboard() {
         <aside className="space-y-5">
           <div className="rounded-xl border border-border bg-secondary p-6 shadow-sm transition-smooth">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Total group spending
+              Total spending
             </h3>
             <div className="mt-3 flex items-center gap-2 text-3xl font-extrabold text-primary">
               <IndianRupee size={28} strokeWidth={2.5} />
-              {expenses
-                .reduce((acc, curr) => acc + curr.amount, 0)
-                .toLocaleString()}
+              {(analytics?.totalSpending ?? expenses.reduce((a, e) => a + e.amount, 0)).toLocaleString()}
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Across {expenses.length} transaction
-              {expenses.length !== 1 ? "s" : ""}
+              Across {analytics?.expenseCount ?? expenses.length} transaction
+              {(analytics?.expenseCount ?? expenses.length) !== 1 ? "s" : ""}
             </p>
           </div>
+          {analytics && (analytics.byMonth?.length > 0 || analytics.byCategory?.length > 0) && (
+            <div className="rounded-xl border border-border bg-secondary p-6 shadow-sm transition-smooth">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Spending by month
+              </h3>
+              <div className="mt-4 space-y-3">
+                {analytics.byMonth.map((m) => {
+                  const max = Math.max(...analytics.byMonth.map((x) => x.total), 1);
+                  const pct = max > 0 ? (m.total / max) * 100 : 0;
+                  return (
+                    <div key={m.month} className="flex items-center gap-3">
+                      <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">
+                        {m.label}
+                      </span>
+                      <div className="flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-6 rounded-full bg-primary/80 transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-16 shrink-0 text-right text-xs font-semibold text-foreground">
+                        ₹{m.total.toLocaleString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {analytics.byCategory?.length > 0 && (
+                <>
+                  <h3 className="mt-5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    By category
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {analytics.byCategory.map((c) => (
+                      <li
+                        key={c.name}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="text-muted-foreground">{c.name}</span>
+                        <span className="font-semibold text-foreground">
+                          ₹{c.total.toLocaleString()}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
         </aside>
 
         <section>
@@ -168,7 +233,7 @@ export default function Dashboard() {
                 <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">
-                      {expense.name || expense.description}
+                      {expense.description || "—"}
                     </h3>
                     <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar size={14} />
@@ -192,23 +257,32 @@ export default function Dashboard() {
                       <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary">
                         <User size={12} />
                       </div>
-                      {expense.paidBy}
+                      {getPaidByName(expense)}
                     </div>
                   </div>
                   <div>
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Participants
+                      Split
                     </span>
                     <div className="flex items-center gap-2 font-medium text-foreground">
                       <Users size={16} className="text-muted-foreground" />
-                      {Array.isArray(expense.participants)
-                        ? expense.participants.join(", ")
-                        : ""}
+                      {expense.splitType || "equal"} •{" "}
+                      {expense.splitDetails?.length ?? 0} participants
                     </div>
                   </div>
                 </div>
 
                 <div className="relative z-10 mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setViewingExpense(expense)}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-smooth hover:bg-secondary hover:text-primary"
+                    title="View details"
+                    aria-label="View expense details"
+                  >
+                    <Eye size={16} />
+                    View detail
+                  </button>
                   <button
                     type="button"
                     onClick={() => setEditingExpense(expense)}
@@ -234,6 +308,13 @@ export default function Dashboard() {
         </section>
       </div>
 
+      {viewingExpense && (
+        <ExpenseDetailModal
+          expense={viewingExpense}
+          onClose={() => setViewingExpense(null)}
+        />
+      )}
+
       {editingExpense && (
         <>
           <div
@@ -250,7 +331,13 @@ export default function Dashboard() {
               <AddExpenseForm
                 expenseId={editingExpense._id}
                 initialExpense={editingExpense}
-                groupId={editingExpense.groupId ?? null}
+                groupId={
+                  typeof editingExpense.groupId === "object" && editingExpense.groupId?._id
+                    ? editingExpense.groupId._id
+                    : typeof editingExpense.groupId === "string"
+                      ? editingExpense.groupId
+                      : null
+                }
                 compact
                 onClose={() => {
                   setEditingExpense(null);

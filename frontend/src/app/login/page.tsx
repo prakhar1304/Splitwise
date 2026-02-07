@@ -84,7 +84,7 @@ export default function LoginPage() {
 
           <p className="mt-6 text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-semibold text-accent hover:underline">
+            <Link href="/signup" prefetch={false} className="font-semibold text-accent hover:underline">
               Sign up
             </Link>
           </p>

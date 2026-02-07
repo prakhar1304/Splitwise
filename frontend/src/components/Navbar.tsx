@@ -84,6 +84,7 @@ const Navbar = () => {
           <>
             <Link
               href="/login"
+              prefetch={false}
               className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-[#2d1f0a] transition-[background-color,color,box-shadow] duration-200 hover:bg-white/25 hover:text-[#1f1509] hover:shadow-[0_1px_4px_rgba(5,3,21,0.08)]"
             >
               <LogIn size={18} />
@@ -91,6 +92,7 @@ const Navbar = () => {
             </Link>
             <Link
               href="/signup"
+              prefetch={false}
               className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-[#2d1f0a] transition-[background-color,color,box-shadow] duration-200 hover:bg-white/25 hover:text-[#1f1509] hover:shadow-[0_1px_4px_rgba(5,3,21,0.08)]"
             >
               <UserPlus size={18} />

@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { expenseApi, groupsApi, Group, SplitDetail, Expense } from "@/utils/api";
+import {
+  expenseApi,
+  groupsApi,
+  usersApi,
+  Group,
+  SplitDetail,
+  Expense,
+  User,
+} from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   CreditCard,
   IndianRupee,
-  User,
+  User as UserIcon,
   Users,
   FileText,
   CheckCircle2,
@@ -54,19 +62,24 @@ export default function AddExpenseForm({
 }: AddExpenseFormProps) {
   const isEditMode = !!(expenseId && initialExpense);
   const effectiveGroupId = initialExpense?.groupId ?? groupId;
+  const effectiveGroupIdStr =
+    typeof effectiveGroupId === "string"
+      ? effectiveGroupId
+      : effectiveGroupId && typeof effectiveGroupId === "object" && "_id" in effectiveGroupId
+        ? effectiveGroupId._id
+        : null;
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [includePaidBy, setIncludePaidBy] = useState(true);
   const [formData, setFormData] = useState({
-    name: "",
+    description: "",
     amount: "",
-    paidBy: "",
-    participants: "",
   });
+  const [paidByUserId, setPaidByUserId] = useState<string>("");
   const [group, setGroup] = useState<Group | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [splitType, setSplitType] = useState<"equal" | "unequal" | "percentage">(
     "equal"
   );
@@ -76,64 +89,123 @@ export default function AddExpenseForm({
   const [splitDetails, setSplitDetails] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!isEditMode && user) setFormData((prev) => ({ ...prev, paidBy: user.name }));
+    if (!isEditMode && user) setPaidByUserId(user._id);
   }, [user, isEditMode]);
 
   useEffect(() => {
-    const loadGroup = async () => {
-      if (!effectiveGroupId) return;
+    const loadUsers = async () => {
       try {
-        const res = await groupsApi.getGroup(effectiveGroupId);
-        const data = (res as { data?: Group }).data ?? null;
-        setGroup(data);
-        if (isEditMode && initialExpense?.splitDetails?.length) {
-          const ids = initialExpense.splitDetails.map((d) => d.userId);
+        const res = await usersApi.getAllUsers();
+        const list = (res as { data?: User[] }).data ?? [];
+        const users = Array.isArray(list) ? list : [];
+        setAllUsers(users);
+        if (isEditMode && initialExpense?.splitDetails?.length && !effectiveGroupId) {
+          const ids = initialExpense.splitDetails.map((d) =>
+            typeof d.userId === "object" && d.userId?._id
+              ? d.userId._id
+              : String(d.userId)
+          );
           setSelectedParticipantIds(ids);
           const details: Record<string, string> = {};
-          const stype = (initialExpense.splitType as "equal" | "unequal" | "percentage") || "equal";
+          const stype =
+            (initialExpense.splitType as "equal" | "unequal" | "percentage") || "equal";
           const total = Number(initialExpense.amount) || 1;
           initialExpense.splitDetails.forEach((d) => {
+            const uid =
+              typeof d.userId === "object" && d.userId?._id
+                ? d.userId._id
+                : String(d.userId);
             if (stype === "percentage" && total > 0) {
-              details[d.userId] = String(Math.round((d.amount / total) * 1000) / 10);
+              details[uid] = String(Math.round((d.amount / total) * 1000) / 10);
             } else {
-              details[d.userId] = String(d.amount);
+              details[uid] = String(d.amount);
             }
           });
           setSplitDetails(details);
           setSplitType(stype);
+          const paidById =
+            typeof initialExpense.paidBy === "object" && initialExpense.paidBy?._id
+              ? initialExpense.paidBy._id
+              : String(initialExpense.paidBy ?? "");
+          setPaidByUserId(paidById);
+        } else if (!isEditMode && user && users.length > 0) {
+          setSelectedParticipantIds((prev) =>
+            prev.length === 0 ? [user._id] : prev
+          );
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    if (!effectiveGroupId) loadUsers();
+  }, [effectiveGroupId, isEditMode, user?._id, initialExpense]);
+
+  useEffect(() => {
+    const loadGroup = async () => {
+      if (!effectiveGroupIdStr) return;
+      try {
+        const res = await groupsApi.getGroup(effectiveGroupIdStr);
+        const data = (res as { data?: Group }).data ?? null;
+        setGroup(data);
+        if (isEditMode && initialExpense?.splitDetails?.length) {
+          const ids = initialExpense.splitDetails.map((d) =>
+            typeof d.userId === "object" && d.userId?._id
+              ? d.userId._id
+              : String(d.userId)
+          );
+          setSelectedParticipantIds(ids);
+          const details: Record<string, string> = {};
+          const stype =
+            (initialExpense.splitType as "equal" | "unequal" | "percentage") ||
+            "equal";
+          const total = Number(initialExpense.amount) || 1;
+          initialExpense.splitDetails.forEach((d) => {
+            const uid =
+              typeof d.userId === "object" && d.userId?._id
+                ? d.userId._id
+                : String(d.userId);
+            if (stype === "percentage" && total > 0) {
+              details[uid] = String(
+                Math.round((d.amount / total) * 1000) / 10
+              );
+            } else {
+              details[uid] = String(d.amount);
+            }
+          });
+          setSplitDetails(details);
+          setSplitType(stype);
+          const paidById =
+            typeof initialExpense.paidBy === "object" && initialExpense.paidBy?._id
+              ? initialExpense.paidBy._id
+              : String(initialExpense.paidBy ?? "");
+          setPaidByUserId(paidById);
         } else if (data?.members && !isEditMode) {
           const ids = data.members.map((m) => m._id);
           setSelectedParticipantIds(ids);
+          setPaidByUserId(user?._id ?? data.members[0]?._id ?? "");
         }
       } catch (err) {
         console.error(err);
       }
     };
     if (effectiveGroupId) loadGroup();
-  }, [effectiveGroupId, isEditMode, initialExpense?.splitDetails, initialExpense?.splitType]);
+  }, [effectiveGroupIdStr, isEditMode, initialExpense?.splitDetails, initialExpense?.splitType, initialExpense?.paidBy, user?._id]);
 
   useEffect(() => {
     if (isEditMode && initialExpense) {
       setFormData({
-        name: initialExpense.name || "",
+        description: initialExpense.description || "",
         amount: String(initialExpense.amount ?? ""),
-        paidBy: initialExpense.paidBy || "",
-        participants: Array.isArray(initialExpense.participants)
-          ? initialExpense.participants.join(", ")
-          : "",
       });
-      const paidByInParticipants = !!(
-        Array.isArray(initialExpense.participants) &&
-        initialExpense.paidBy &&
-        initialExpense.participants.some(
-          (p) => p.toLowerCase() === initialExpense.paidBy?.toLowerCase()
-        )
-      );
-      setIncludePaidBy(paidByInParticipants);
     }
   }, [isEditMode, initialExpense]);
 
   const isGroupMode = !!effectiveGroupId && !!group;
+
+  // For non-group: include current user in list (creator usually paid) - backend excludes them
+  const usersForForm: User[] = user
+    ? [user, ...allUsers.filter((u) => u._id !== user._id)]
+    : allUsers;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,18 +217,63 @@ export default function AddExpenseForm({
         throw new Error("Amount must be greater than 0");
       }
 
+      const paidBy = paidByUserId || user?._id;
+      if (!paidBy) throw new Error("Please select who paid");
+
       if (isEditMode && expenseId) {
         if (isGroupMode && group) {
           let participantIds = selectedParticipantIds;
-          if (participantIds.length === 0) participantIds = group.members.map((m) => m._id);
+          if (participantIds.length === 0)
+            participantIds = group.members.map((m) => m._id);
           if (splitType === "equal") {
             await expenseApi.updateExpense(expenseId, {
-              name: formData.name,
-              description: formData.name,
+              description: formData.description,
               amount: amountNumber,
-              paidBy: user?.name ?? formData.paidBy,
-              paidByUser: user?._id,
+              paidBy,
               participantIds,
+            });
+          } else {
+            const entries: SplitDetail[] =
+              splitType === "percentage"
+                ? percentagesToAmounts(
+                    participantIds,
+                    splitDetails,
+                    amountNumber
+                  )
+                : participantIds.map((id) => ({
+                    userId: id,
+                    amount: Number(splitDetails[id] || 0),
+                  }));
+            if (splitType === "unequal") {
+              const total = entries.reduce((s, d) => s + d.amount, 0);
+              if (Math.abs(total - amountNumber) > 0.02) {
+                throw new Error(
+                  `Sum of individual shares (${total}) must equal total amount (${amountNumber})`
+                );
+              }
+            }
+            await expenseApi.updateExpense(expenseId, {
+              description: formData.description,
+              amount: amountNumber,
+              paidBy,
+              splitType,
+              splitDetails: entries,
+            });
+          }
+        } else {
+          let participantIds = selectedParticipantIds;
+          if (!participantIds.includes(paidBy)) participantIds.push(paidBy);
+          if (participantIds.length === 0)
+            throw new Error("Select at least one participant");
+          if (splitType === "equal") {
+            const share = parseFloat((amountNumber / participantIds.length).toFixed(2));
+            await expenseApi.updateExpense(expenseId, {
+              description: formData.description,
+              amount: amountNumber,
+              paidBy,
+              participantIds,
+              splitType: "equal",
+              splitDetails: participantIds.map((id) => ({ userId: id, amount: share })),
             });
           } else {
             const entries: SplitDetail[] =
@@ -175,36 +292,13 @@ export default function AddExpenseForm({
               }
             }
             await expenseApi.updateExpense(expenseId, {
-              name: formData.name,
-              description: formData.name,
+              description: formData.description,
               amount: amountNumber,
-              paidBy: user?.name ?? formData.paidBy,
-              paidByUser: user?._id,
+              paidBy,
               splitType,
               splitDetails: entries,
             });
           }
-        } else {
-          let participantList = formData.participants
-            .split(",")
-            .map((p) => p.trim())
-            .filter((p) => p !== "");
-          if (includePaidBy && formData.paidBy) {
-            if (
-              !participantList.some(
-                (p) => p.toLowerCase() === formData.paidBy.toLowerCase()
-              )
-            ) {
-              participantList.push(formData.paidBy);
-            }
-          }
-          await expenseApi.updateExpense(expenseId, {
-            name: formData.name,
-            description: formData.name,
-            amount: amountNumber,
-            paidBy: formData.paidBy,
-            participants: participantList,
-          });
         }
       } else if (isGroupMode && group && user) {
         let participantIds = selectedParticipantIds;
@@ -214,20 +308,22 @@ export default function AddExpenseForm({
         }
         if (splitType === "equal") {
           await groupsApi.createGroupExpense({
-            name: formData.name,
+            description: formData.description,
             amount: amountNumber,
-            description: formData.name,
-            paidBy: user.name,
-            paidByUser: user._id,
-            groupId: effectiveGroupId!,
+            paidBy,
+            groupId: effectiveGroupIdStr!,
             splitType,
             participantIds,
           });
         } else {
           const entries: SplitDetail[] =
             splitType === "percentage"
-              ? percentagesToAmounts(selectedParticipantIds, splitDetails, amountNumber)
-              : selectedParticipantIds.map((id) => ({
+              ? percentagesToAmounts(
+                  participantIds,
+                  splitDetails,
+                  amountNumber
+                )
+              : participantIds.map((id) => ({
                   userId: id,
                   amount: Number(splitDetails[id] || 0),
                 }));
@@ -240,37 +336,61 @@ export default function AddExpenseForm({
             }
           }
           await groupsApi.createGroupExpense({
-            name: formData.name,
+            description: formData.description,
             amount: amountNumber,
-            description: formData.name,
-            paidBy: user.name,
-            paidByUser: user._id,
-            groupId: effectiveGroupId!,
+            paidBy,
+            groupId: effectiveGroupIdStr!,
             splitType,
             splitDetails: entries,
           });
         }
       } else {
-        let participantList = formData.participants
-          .split(",")
-          .map((p) => p.trim())
-          .filter((p) => p !== "");
-        if (includePaidBy && formData.paidBy) {
-          if (
-            !participantList.some(
-              (p) => p.toLowerCase() === formData.paidBy.toLowerCase()
-            )
-          ) {
-            participantList.push(formData.paidBy);
-          }
+        let participantIds = [...selectedParticipantIds];
+        if (!participantIds.includes(paidBy!)) {
+          participantIds.push(paidBy!);
         }
-        await expenseApi.createExpense({
-          name: formData.name,
-          amount: Number(formData.amount),
-          description: formData.name,
-          paidBy: formData.paidBy,
-          participants: participantList,
-        });
+        if (participantIds.length === 0)
+          throw new Error("Select at least one participant");
+        if (splitType === "equal") {
+          const share = parseFloat(
+            (amountNumber / participantIds.length).toFixed(2)
+          );
+          await expenseApi.createExpense({
+            description: formData.description,
+            amount: amountNumber,
+            paidBy: paidBy!,
+            participantIds,
+            splitType: "equal",
+            splitDetails: participantIds.map((id) => ({ userId: id, amount: share })),
+          });
+        } else {
+          const entries: SplitDetail[] =
+            splitType === "percentage"
+              ? percentagesToAmounts(
+                  participantIds,
+                  splitDetails,
+                  amountNumber
+                )
+              : participantIds.map((id) => ({
+                  userId: id,
+                  amount: Number(splitDetails[id] || 0),
+                }));
+          if (splitType === "unequal") {
+            const total = entries.reduce((s, d) => s + d.amount, 0);
+            if (Math.abs(total - amountNumber) > 0.02) {
+              throw new Error(
+                `Sum of individual shares (${total}) must equal total amount (${amountNumber})`
+              );
+            }
+          }
+          await expenseApi.createExpense({
+            description: formData.description,
+            amount: amountNumber,
+            paidBy: paidBy!,
+            splitType,
+            splitDetails: entries,
+          });
+        }
       }
       setSuccess(true);
       setTimeout(() => {
@@ -278,7 +398,7 @@ export default function AddExpenseForm({
           onClose();
           return;
         }
-        if (isGroupMode && effectiveGroupId) router.push(`/groups/${effectiveGroupId}`);
+        if (isGroupMode && effectiveGroupIdStr) router.push(`/groups/${effectiveGroupIdStr}`);
         else router.push("/");
       }, 1500);
     } catch (err: unknown) {
@@ -385,40 +505,59 @@ export default function AddExpenseForm({
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <FileText size={16} />
-                  Title / description
+                  Description
                 </label>
-                <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-25 before:blur-lg before:content-['']">
                 <input
                   type="text"
-                  className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
                   placeholder="What was this for?"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                 />
-                </div>
               </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <IndianRupee size={16} />
                   Amount
                 </label>
-                <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-25 before:blur-lg before:content-['']">
                 <input
                   type="number"
-                  className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
                   placeholder="0.00"
                   required
                   value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, amount: e.target.value })
+                  }
                 />
-                </div>
               </div>
 
               {isGroupMode ? (
                 <>
                   <div className="space-y-2">
-                    <span className="text-sm font-semibold text-muted-foreground">Split type</span>
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Paid by
+                    </span>
+                    <select
+                      className="w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      value={paidByUserId}
+                      onChange={(e) => setPaidByUserId(e.target.value)}
+                    >
+                      {group?.members.map((m) => (
+                        <option key={String(m._id)} value={String(m._id)}>
+                          {m.name}
+                          {m._id === user?._id ? " (you)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Split type
+                    </span>
                     <div className="flex flex-wrap gap-2">
                       {[
                         { value: "equal", label: "Equal" },
@@ -445,23 +584,22 @@ export default function AddExpenseForm({
                     <div className="space-y-2 rounded-xl border border-border bg-secondary/60 p-3 max-h-48 overflow-y-auto">
                       {group?.members.map((member) => (
                         <label
-                          key={member._id}
+                          key={String(member._id)}
                           className="flex items-center justify-between gap-3 rounded-lg bg-card px-3 py-2 text-sm shadow-sm transition-smooth"
                         >
                           <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
                               className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                              checked={selectedParticipantIds.includes(member._id)}
+                              checked={selectedParticipantIds.includes(String(member._id))}
                               onChange={(e) => {
+                                const mid = String(member._id);
                                 setSelectedParticipantIds((prev) =>
-                                  e.target.checked
-                                    ? [...prev, member._id]
-                                    : prev.filter((id) => id !== member._id)
+                                  e.target.checked ? [...prev, mid] : prev.filter((id) => id !== mid)
                                 );
                               }}
                             />
-                            <Avatar userId={member._id} name={member.name} size={28} />
+                            <Avatar userId={String(member._id)} name={member.name} size={28} />
                             <span className="font-medium text-foreground">{member.name}</span>
                           </div>
                           {(splitType === "unequal" || splitType === "percentage") && (
@@ -469,11 +607,11 @@ export default function AddExpenseForm({
                               type="number"
                               className="w-24 rounded-lg border border-input px-2 py-1 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                               placeholder={splitType === "percentage" ? "% share" : "Amount"}
-                              value={splitDetails[member._id] || ""}
+                              value={splitDetails[String(member._id)] || ""}
                               onChange={(e) =>
                                 setSplitDetails((prev) => ({
                                   ...prev,
-                                  [member._id]: e.target.value,
+                                  [String(member._id)]: e.target.value,
                                 }))
                               }
                             />
@@ -493,54 +631,104 @@ export default function AddExpenseForm({
               ) : (
                 <>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <User size={16} />
+                    <span className="text-sm font-semibold text-muted-foreground">
                       Paid by
-                    </label>
-                    <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-25 before:blur-lg before:content-['']">
-                    <input
-                      type="text"
-                      className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      placeholder="Who paid?"
-                      required
-                      value={formData.paidBy}
-                      onChange={(e) => setFormData({ ...formData, paidBy: e.target.value })}
-                    />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3 rounded-xl bg-secondary/80 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <User size={16} className="text-primary" />
-                      Include payer in participants
                     </span>
-                    <label className="relative inline-block h-6 w-11 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="peer sr-only"
-                        checked={includePaidBy}
-                        onChange={(e) => setIncludePaidBy(e.target.checked)}
-                      />
-                      <span className="absolute inset-0 rounded-full bg-input transition-smooth peer-checked:bg-primary"></span>
-                      <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></span>
-                    </label>
+                    <select
+                      className="w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      value={paidByUserId}
+                      onChange={(e) => setPaidByUserId(e.target.value)}
+                    >
+                      {usersForForm.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name}
+                          {u._id === user?._id ? " (you)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      You are selected by default (creator usually paid)
+                    </p>
                   </div>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <Users size={16} />
-                      Other participants
-                    </label>
-                    <div className="relative overflow-hidden rounded-lg before:absolute before:right-0 before:top-0 before:h-8 before:w-8 before:rounded-full before:bg-primary before:opacity-25 before:blur-lg before:content-['']">
-                    <input
-                      type="text"
-                      className="relative w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all placeholder:opacity-60 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      placeholder="Rahul, Neha (comma-separated)"
-                      value={formData.participants}
-                      onChange={(e) =>
-                        setFormData({ ...formData, participants: e.target.value })
-                      }
-                    />
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Split type
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: "equal", label: "Equal" },
+                        { value: "unequal", label: "Unequal" },
+                        { value: "percentage", label: "Percentage" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setSplitType(opt.value as typeof splitType)}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-smooth ${
+                            splitType === opt.value
+                              ? "border-primary bg-primary/15 text-accent"
+                              : "border-input bg-card text-muted-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">Separate names with commas</p>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Participants
+                    </span>
+                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-border bg-secondary/60 p-3">
+                      {usersForForm.map((u) => (
+                        <label
+                          key={u._id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-card px-3 py-2 text-sm shadow-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                              checked={selectedParticipantIds.includes(u._id)}
+                              onChange={(e) => {
+                                setSelectedParticipantIds((prev) =>
+                                  e.target.checked ? [...prev, u._id] : prev.filter((id) => id !== u._id)
+                                );
+                              }}
+                            />
+                            <Avatar userId={u._id} name={u.name ?? ""} size={28} />
+                            <span className="font-medium text-foreground">
+                              {u.name}
+                              {u._id === user?._id ? " (you)" : ""}
+                            </span>
+                          </div>
+                          {(splitType === "unequal" || splitType === "percentage") && (
+                            <input
+                              type="number"
+                              className="w-24 rounded-lg border border-input px-2 py-1 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              placeholder={splitType === "percentage" ? "% share" : "Amount"}
+                              value={splitDetails[u._id] || ""}
+                              onChange={(e) =>
+                                setSplitDetails((prev) => ({
+                                  ...prev,
+                                  [u._id]: e.target.value,
+                                }))
+                              }
+                            />
+                          )}
+                        </label>
+                      ))}
+                      {splitType !== "equal" && (
+                        <p className="pt-1 text-xs text-muted-foreground">
+                          {splitType === "percentage"
+                            ? "Enter each person's share as a percentage (e.g. 70, 30). Must add up to 100%."
+                            : "Sum of individual shares must equal the total amount."}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Select who is part of this expense
+                    </p>
                   </div>
                 </>
               )}
