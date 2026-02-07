@@ -2,6 +2,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiRes.js';
 import { Group } from '../model/group.model.js';
 import { User } from '../model/user.model.js';
+import { Expense } from '../model/expenses.model.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const createGroup = asyncHandler(async (req, res) => {
@@ -103,4 +104,33 @@ const addMember = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, populated, 'Member added successfully'));
 });
 
-export { createGroup, getGroups, getGroupById, addMember };
+/** Delete group - only creator can delete. Group expenses are unlinked (groupId set to null). */
+const deleteGroup = asyncHandler(async (req, res) => {
+  const { id: groupId } = req.params;
+
+  const group = await Group.findById(groupId);
+  if (!group) {
+    throw new ApiError(404, 'Group not found');
+  }
+
+  const isCreator =
+    group.createdBy &&
+    group.createdBy.toString() === req.user._id.toString();
+  if (!isCreator) {
+    throw new ApiError(403, 'Only the group creator can delete this group');
+  }
+
+  // Unlink expenses from this group (preserve expense data as personal)
+  await Expense.updateMany(
+    { groupId },
+    { $set: { groupId: null } }
+  );
+
+  await Group.findByIdAndDelete(groupId);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, 'Group deleted successfully'));
+});
+
+export { createGroup, getGroups, getGroupById, addMember, deleteGroup };

@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   groupsApi,
   usersApi,
+  expenseApi,
   Group,
   Expense,
   Settlement,
@@ -26,6 +27,7 @@ import {
   Wallet,
   Pencil,
   Eye,
+  Trash2,
 } from "lucide-react";
 import AddExpenseForm from "@/components/AddExpenseForm";
 import ExpenseDetailModal from "@/components/ExpenseDetailModal";
@@ -51,9 +53,20 @@ export default function GroupDetailsClient() {
   const [addMemberError, setAddMemberError] = useState("");
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
+  const [deleteGroupConfirm, setDeleteGroupConfirm] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
   const addMemberDropdownRef = useRef<HTMLDivElement>(null);
 
   const isNewlyCreated = searchParams?.get("created") === "1";
+
+  const isGroupCreator = useMemo(() => {
+    if (!group || !user) return false;
+    const creatorId = typeof group.createdBy === "object" && group.createdBy && "_id" in group.createdBy
+      ? (group.createdBy as User)._id
+      : String(group.createdBy ?? "");
+    return creatorId === user._id;
+  }, [group, user]);
 
   const currentMemberIds = useMemo(
     () =>
@@ -172,6 +185,39 @@ export default function GroupDetailsClient() {
     }
   };
 
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      setDeletingExpenseId(expenseId);
+      await expenseApi.deleteExpense(expenseId);
+      setExpenses((prev) => prev.filter((e) => e._id !== expenseId));
+      fetchBalances();
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to delete expense";
+      setError(msg);
+    } finally {
+      setDeletingExpenseId(null);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!groupId) return;
+    try {
+      setDeletingGroup(true);
+      await groupsApi.deleteGroup(groupId);
+      router.push("/groups");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to delete group";
+      setError(msg);
+      setDeleteGroupConfirm(false);
+    } finally {
+      setDeletingGroup(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
@@ -245,12 +291,47 @@ export default function GroupDetailsClient() {
 
         </div>
         {group && (
-          <Link
-            href={`/add?groupId=${group._id}`}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-smooth hover:opacity-90 hover:shadow-xl hover:shadow-primary/40"
-          >
-            Add expense to group
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/add?groupId=${group._id}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-smooth hover:opacity-90 hover:shadow-xl hover:shadow-primary/40"
+            >
+              Add expense to group
+            </Link>
+            {isGroupCreator && (
+              deleteGroupConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Delete group?</span>
+                  <button
+                    type="button"
+                    onClick={handleDeleteGroup}
+                    disabled={deletingGroup}
+                    className="inline-flex items-center gap-1.5 rounded-xl border-2 border-red-500 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition-smooth hover:bg-red-100 disabled:opacity-60"
+                  >
+                    {deletingGroup ? "Deleting..." : "Yes, delete"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteGroupConfirm(false)}
+                    disabled={deletingGroup}
+                    className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-smooth hover:bg-secondary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setDeleteGroupConfirm(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border-2 border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-smooth hover:border-red-300 hover:bg-red-50"
+                  title="Delete group (creator only)"
+                >
+                  <Trash2 size={16} />
+                  Delete group
+                </button>
+              )
+            )}
+          </div>
         )}
       </header>
 
@@ -419,7 +500,10 @@ export default function GroupDetailsClient() {
             ) : (
               <div className="space-y-4">
                 {expenses.map((expense) => {
-                  const canEdit = user?._id && (expense.createdBy === user._id || expense.createdBy === undefined);
+                  const createdById = typeof expense.createdBy === "object" && expense.createdBy && "_id" in expense.createdBy
+                    ? (expense.createdBy as { _id: string })._id
+                    : (expense.createdBy ?? "");
+                  const canEdit = user?._id && createdById === user._id;
                   return (
                     <div
                       key={expense._id}
@@ -460,15 +544,27 @@ export default function GroupDetailsClient() {
                             {expense.amount.toLocaleString()}
                           </div>
                           {canEdit && (
-                            <button
-                              type="button"
-                              onClick={() => setEditingExpense(expense)}
-                              className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
-                              title="Edit expense"
-                              aria-label="Edit expense"
-                            >
-                              <Pencil size={16} />
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setEditingExpense(expense)}
+                                className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
+                                title="Edit expense"
+                                aria-label="Edit expense"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteExpense(expense._id)}
+                                disabled={deletingExpenseId === expense._id}
+                                className="inline-flex items-center justify-center rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+                                title="Delete expense"
+                                aria-label="Delete expense"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

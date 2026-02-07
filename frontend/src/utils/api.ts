@@ -222,6 +222,10 @@ export const groupsApi = {
     });
     return res.data;
   },
+  deleteGroup: async (groupId: string) => {
+    const res = await api.delete<ApiResponse<null>>(`/groups/${groupId}`);
+    return res.data;
+  },
   getGroupExpenses: async (groupId: string) => {
     const res = await api.get<ApiResponse<Expense[]>>(`/expenses/group/${groupId}`);
     return res.data;

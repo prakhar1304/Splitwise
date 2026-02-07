@@ -283,24 +283,30 @@ export default function Dashboard() {
                     <Eye size={16} />
                     View detail
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingExpense(expense)}
-                    className="inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium text-muted-foreground transition-smooth hover:bg-secondary hover:text-primary"
-                    title="Edit expense"
-                    aria-label="Edit expense"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
-                    onClick={() => handleDelete(expense._id)}
-                    disabled={deletingId === expense._id}
-                  >
-                    <Trash2 size={16} />
-                    {deletingId === expense._id ? "Deleting..." : "Delete"}
-                  </button>
+                  {(typeof expense.createdBy === "object" && expense.createdBy && "_id" in expense.createdBy
+                    ? (expense.createdBy as { _id: string })._id
+                    : expense.createdBy ?? "") === user?._id && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditingExpense(expense)}
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium text-muted-foreground transition-smooth hover:bg-secondary hover:text-primary"
+                        title="Edit expense"
+                        aria-label="Edit expense"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+                        onClick={() => handleDelete(expense._id)}
+                        disabled={deletingId === expense._id}
+                      >
+                        <Trash2 size={16} />
+                        {deletingId === expense._id ? "Deleting..." : "Delete"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
