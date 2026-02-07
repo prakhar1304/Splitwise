@@ -328,7 +328,7 @@ export default function GroupDetailsClient() {
                       </svg>
                     </button>
                     {addMemberDropdownOpen && (
-                      <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-44 overflow-auto rounded-lg border border-border bg-card py-1 shadow-lg">
+                      <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-card py-1 shadow-lg">
                         {usersToAdd.map((u) => (
                           <li key={u._id}>
                             <button

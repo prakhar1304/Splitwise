@@ -138,7 +138,7 @@ export default function CreateGroupPage() {
           </div>
         </aside>
 
-        <section className="relative overflow-hidden rounded-xl border border-border bg-card p-6 shadow-sm transition-smooth before:absolute before:right-2 before:top-2 before:h-20 before:w-20 before:rounded-full before:bg-primary before:opacity-15 before:blur-2xl before:content-[''] after:absolute after:-right-6 after:-top-6 after:h-24 after:w-24 after:rounded-full after:bg-accent after:opacity-10 after:blur-2xl after:content-['']">
+        <section className="relative overflow-visible rounded-xl border border-border bg-card p-6 shadow-sm transition-smooth before:absolute before:right-2 before:top-2 before:h-20 before:w-20 before:rounded-full before:bg-primary before:opacity-15 before:blur-2xl before:content-[''] after:absolute after:-right-6 after:-top-6 after:h-24 after:w-24 after:rounded-full after:bg-accent after:opacity-10 after:blur-2xl after:content-['']">
           <div className="relative z-10">
           {success ? (
             <div className="py-10 text-center">
@@ -211,7 +211,7 @@ export default function CreateGroupPage() {
                     </svg>
                   </button>
                   {dropdownOpen && availableToAdd.length > 0 && (
-                    <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-border bg-card py-1 shadow-lg">
+                    <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 w-full overflow-y-auto overflow-x-hidden rounded-xl border border-border bg-card py-1 shadow-lg">
                       {availableToAdd.map((u) => (
                         <li key={u._id}>
                           <button
