@@ -235,20 +235,8 @@ const updateExpense = asyncHandler(async (req, res) => {
   const isOwner =
     expense.createdBy &&
     expense.createdBy.toString() === req.user._id.toString();
-  let isGroupMember = false;
-  if (expense.groupId) {
-    const group = await Group.findById(expense.groupId);
-    if (group) {
-      isGroupMember = group.members.some(
-        (m) => m.toString() === req.user._id.toString()
-      );
-    }
-  }
-  if (!isOwner && !isGroupMember) {
-    throw new ApiError(
-      403,
-      'You can only update your own expense or one in your group'
-    );
+  if (!isOwner) {
+    throw new ApiError(403, 'Only the creator can edit this expense');
   }
 
   const allowed = [
@@ -307,20 +295,8 @@ const deleteExpense = asyncHandler(async (req, res) => {
   const isOwner =
     expense.createdBy &&
     expense.createdBy.toString() === req.user._id.toString();
-  let isGroupMember = false;
-  if (expense.groupId) {
-    const group = await Group.findById(expense.groupId);
-    if (group) {
-      isGroupMember = group.members.some(
-        (m) => m.toString() === req.user._id.toString()
-      );
-    }
-  }
-  if (!isOwner && !isGroupMember) {
-    throw new ApiError(
-      403,
-      'You can only delete your own expense or one in your group'
-    );
+  if (!isOwner) {
+    throw new ApiError(403, 'Only the creator can delete this expense');
   }
 
   await Expense.findByIdAndDelete(id);
