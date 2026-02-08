@@ -39,13 +39,16 @@ export default function ExpenseDetailModal({ expense, onClose }: ExpenseDetailMo
         aria-hidden
         onClick={onClose}
       />
+      
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="expense-detail-title"
         className="fixed inset-x-4 top-1/2 z-50 max-h-[90vh] -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl animate-in fade-in duration-300 sm:inset-x-auto sm:left-1/2 sm:right-auto sm:w-full sm:max-w-md sm:-translate-x-1/2"
       >
+        <div className="pointer-events-none absolute -top-8 -right-8 h-40 w-40 rounded-full bg-secondary blur-2xl z-0" />
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
+
           <h2 id="expense-detail-title" className="text-lg font-semibold text-foreground">
             Expense details
           </h2>
@@ -178,7 +181,7 @@ export default function ExpenseDetailModal({ expense, onClose }: ExpenseDetailMo
               </ul>
             </div>
           )}
-
+          <div className="grid grid-cols-2 gap-6">
           {expense.groupId && typeof expense.groupId === "object" && (
             <div>
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -217,8 +220,9 @@ export default function ExpenseDetailModal({ expense, onClose }: ExpenseDetailMo
               </p>
             </div>
           )}
+          </div>
 
-          {expense._id && (
+          {/* {expense._id && (
             <div className="pt-4 border-t border-border">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Expense ID
@@ -227,7 +231,7 @@ export default function ExpenseDetailModal({ expense, onClose }: ExpenseDetailMo
                 {expense._id}
               </p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </>

@@ -68,16 +68,23 @@ const createExpense = asyncHandler(async (req, res) => {
       const share = parseFloat((numAmount / pids.length).toFixed(2));
 
       finalSplitDetails = pids.map((uid) => ({ userId: uid, amount: share }));
-    } else if (stype === 'unequal' || stype === 'percentage') 
-      {
+    } 
+    else if (stype === 'unequal' || stype === 'percentage') 
+    {
       const details = Array.isArray(splitDetails) ? splitDetails : [];
+
       const sum = details.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+
+      // console.log("sum", sum);
+      // console.log("numAmount", numAmount);
+
       if (Math.abs(sum - numAmount) > 0.02) {
         throw new ApiError(
           400,
           `Split details total (${sum}) must equal expense amount (${numAmount})`
         );
       }
+
       finalSplitDetails = details.map((d) => ({
         userId: d.userId,
         amount: Number(d.amount) || 0,
@@ -324,6 +331,7 @@ const getBalances = asyncHandler(async (req, res) => {
   const balanceMap = computeBalancesFromExpenses(expenses);
 
   const userIds = [...balanceMap.keys()];
+  
   const users = await User.find({ _id: { $in: userIds } })
     .select('_id name')
     .lean();
@@ -351,6 +359,8 @@ const getBalances = asyncHandler(async (req, res) => {
   const result = settlements.map((s) => ({
     sender: s.fromName,
     receiver: s.toName,
+    senderId: s.fromId,
+    receiverId: s.toId,
     amount: s.amount,
     statement: s.statement,
   }));
@@ -407,6 +417,8 @@ const getBalancesByGroup = asyncHandler(async (req, res) => {
   const result = settlements.map((s) => ({
     sender: s.fromName,
     receiver: s.toName,
+    senderId: s.fromId,
+    receiverId: s.toId,
     amount: s.amount,
     statement: s.statement,
   }));

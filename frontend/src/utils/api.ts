@@ -101,6 +101,8 @@ export interface Group {
 export interface Settlement {
   sender: string;
   receiver: string;
+  senderId?: string;
+  receiverId?: string;
   amount: number;
   statement: string;
 }

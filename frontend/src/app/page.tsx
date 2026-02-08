@@ -225,10 +225,10 @@ export default function Dashboard() {
                 style={{ background: "linear-gradient(135deg, #fbf8f5 0%, #faefdd 45%, #f5e6d6 80%, rgba(247,133,45,0.06) 100%)" }}
               >
                 <div
-                  className="pointer-events-none absolute top-0 right-0 flex h-[8.75rem] w-[8.75rem] items-center justify-center translate-x-[38%] -translate-y-[28%] text-primary/12"
+                  className="pointer-events-none absolute top-0 left-0 flex h-[12rem] w-[10rem] items-center justify-center translate-x-[78%]  text-primary/12"
                   aria-hidden
                 >
-                  <IndianRupee size={100} strokeWidth={1.25} />
+                  <IndianRupee size={300} strokeWidth={3} />
                 </div>
                 <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>

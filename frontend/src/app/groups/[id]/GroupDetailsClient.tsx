@@ -631,14 +631,24 @@ export default function GroupDetailsClient() {
                       )}
                       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                         <div className="flex flex-1 flex-col items-center text-center">
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                              isYouPay
-                                ? "bg-accent/20 text-accent"
-                                : "bg-secondary text-muted-foreground"
-                            }`}
-                          >
-                            <UserCircle2 size={22} />
+                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full shrink-0">
+                            {item.senderId ? (
+                              <Avatar
+                                userId={item.senderId}
+                                name={item.sender}
+                                size={48}
+                              />
+                            ) : (
+                              <div
+                                className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                                  isYouPay
+                                    ? "bg-accent/20 text-accent"
+                                    : "bg-secondary text-muted-foreground"
+                                }`}
+                              >
+                                <UserCircle2 size={26} />
+                              </div>
+                            )}
                           </div>
                           <div className="mt-2 text-sm font-semibold text-foreground">
                             {item.sender}
@@ -657,14 +667,24 @@ export default function GroupDetailsClient() {
                           </div>
                         </div>
                         <div className="flex flex-1 flex-col items-center text-center">
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                              isYouReceive
-                                ? "bg-primary/20 text-primary"
-                                : "bg-secondary text-muted-foreground"
-                            }`}
-                          >
-                            <UserCircle2 size={22} />
+                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full shrink-0">
+                            {item.receiverId ? (
+                              <Avatar
+                                userId={item.receiverId}
+                                name={item.receiver}
+                                size={48}
+                              />
+                            ) : (
+                              <div
+                                className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                                  isYouReceive
+                                    ? "bg-primary/20 text-primary"
+                                    : "bg-secondary text-muted-foreground"
+                                }`}
+                              >
+                                <UserCircle2 size={26} />
+                              </div>
+                            )}
                           </div>
                           <div className="mt-2 text-sm font-semibold text-foreground">
                             {item.receiver}

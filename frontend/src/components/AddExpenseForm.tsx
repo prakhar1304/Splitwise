@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
+import PaidBySelect from "@/components/PaidBySelect";
 
 /** Convert percentage shares to amounts that sum exactly to totalAmount (handles rounding). */
 function percentagesToAmounts(
@@ -537,23 +538,12 @@ export default function AddExpenseForm({
 
               {isGroupMode ? (
                 <>
-                  <div className="space-y-2">
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      Paid by
-                    </span>
-                    <select
-                      className="w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      value={paidByUserId}
-                      onChange={(e) => setPaidByUserId(e.target.value)}
-                    >
-                      {group?.members.map((m) => (
-                        <option key={String(m._id)} value={String(m._id)}>
-                          {m.name}
-                          {m._id === user?._id ? " (you)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <PaidBySelect
+                    users={group?.members ?? []}
+                    value={paidByUserId}
+                    onChange={setPaidByUserId}
+                    currentUserId={user?._id}
+                  />
                   <div className="space-y-2">
                     <span className="text-sm font-semibold text-muted-foreground">
                       Split type
@@ -630,26 +620,13 @@ export default function AddExpenseForm({
                 </>
               ) : (
                 <>
-                  <div className="space-y-2">
-                    <span className="text-sm font-semibold text-muted-foreground">
-                      Paid by
-                    </span>
-                    <select
-                      className="w-full rounded-lg border border-input bg-transparent px-4 py-3 text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      value={paidByUserId}
-                      onChange={(e) => setPaidByUserId(e.target.value)}
-                    >
-                      {usersForForm.map((u) => (
-                        <option key={u._id} value={u._id}>
-                          {u.name}
-                          {u._id === user?._id ? " (you)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground">
-                      You are selected by default (creator usually paid)
-                    </p>
-                  </div>
+                  <PaidBySelect
+                    users={usersForForm}
+                    value={paidByUserId}
+                    onChange={setPaidByUserId}
+                    currentUserId={user?._id}
+                    hint="You are selected by default (creator usually paid)"
+                  />
                   <div className="space-y-2">
                     <span className="text-sm font-semibold text-muted-foreground">
                       Split type

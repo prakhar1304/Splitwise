@@ -11,10 +11,13 @@ import {
   UserCircle2,
   Info,
 } from "lucide-react";
+import Avatar from "@/components/Avatar";
 
 interface Settlement {
   sender: string;
   receiver: string;
+  senderId?: string;
+  receiverId?: string;
   amount: number;
   statement: string;
 }
@@ -165,14 +168,24 @@ export default function BalancesSummary() {
                   )}
                   <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                     <div className="flex flex-1 flex-col items-center text-center">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                          isYouPay
-                            ? "bg-accent/20 text-accent"
-                            : "bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        <UserCircle2 size={28} />
+                      <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full shrink-0">
+                        {item.senderId ? (
+                          <Avatar
+                            userId={item.senderId}
+                            name={item.sender}
+                            size={56}
+                          />
+                        ) : (
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-full ${
+                              isYouPay
+                                ? "bg-accent/20 text-accent"
+                                : "bg-secondary text-muted-foreground"
+                            }`}
+                          >
+                            <UserCircle2 size={32} />
+                          </div>
+                        )}
                       </div>
                       <div className="mt-2 font-semibold text-foreground">
                         {item.sender}
@@ -198,14 +211,24 @@ export default function BalancesSummary() {
                       </div>
                     </div>
                     <div className="flex flex-1 flex-col items-center text-center">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                          isYouReceive
-                            ? "bg-primary/20 text-primary"
-                            : "bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        <UserCircle2 size={28} />
+                      <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full shrink-0">
+                        {item.receiverId ? (
+                          <Avatar
+                            userId={item.receiverId}
+                            name={item.receiver}
+                            size={56}
+                          />
+                        ) : (
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-full ${
+                              isYouReceive
+                                ? "bg-primary/20 text-primary"
+                                : "bg-secondary text-muted-foreground"
+                            }`}
+                          >
+                            <UserCircle2 size={32} />
+                          </div>
+                        )}
                       </div>
                       <div className="mt-2 font-semibold text-foreground">
                         {item.receiver}

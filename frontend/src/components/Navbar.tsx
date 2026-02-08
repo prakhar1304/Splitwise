@@ -10,6 +10,7 @@ import {
   UserPlus,
   LogOut,
   ChevronDown,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Avatar from "@/components/Avatar";
@@ -23,7 +24,7 @@ const Navbar = () => {
   const appLinks = [
     { name: "Dashboard", path: "/", icon: CreditCard },
     { name: "Groups", path: "/groups", icon: Users },
-    { name: "Balances", path: "/balances", icon: Users },
+    { name: "Balances", path: "/balances", icon: Wallet },
   ];
 
   const isAuthPage = pathname === "/login" || pathname === "/signup";
@@ -113,7 +114,7 @@ const Navbar = () => {
               <Avatar
                 userId={user._id}
                 name={user.name}
-                size={24}
+                size={32}
                 className="ring-2 ring-border/60"
               />
               <span className="hidden max-w-[120px] truncate sm:inline">

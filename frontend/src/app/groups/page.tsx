@@ -94,8 +94,14 @@ export default function GroupsDashboard() {
             <Link
               key={group._id}
               href={`/groups/${group._id}`}
-              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10"
+              className="relative isolate overflow-hidden flex flex-col justify-between rounded-xl border border-border bg-card/95 p-5 shadow-sm transition-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10"
             >
+              {/* back glow */}
+              {/* <div className="pointer-events-none absolute -top-20 right-50 h-56 w-56 rounded-full bg-secondary blur-3xl z-0" /> */}
+              {/* front glow */}
+              <div className="pointer-events-none absolute -top-8 -right-8 h-40 w-40 rounded-full bg-secondary blur-2xl z-0" />
+
+
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
                   <Users size={20} />
@@ -117,9 +123,12 @@ export default function GroupsDashboard() {
                     {group.createdBy?.name}
                   </span>
                 </span>
-                <span className="inline-flex items-center gap-1 text-primary">
+                <span className="relative cursor-pointer opacity-90 hover:opacity-100 transition-opacity p-[2px] bg-black rounded-[16px] bg-gradient-to-t from-[#edac80] to-[#b06617] active:scale-95" >
+
+                <span className="w-full h-full flex items-center gap-2 px-8 py-3 bg-[#f3bd5f] text-white rounded-[14px] bg-gradient-to-t from-[#edac80] to-[#b06617]">
                   View details
                   <ArrowRight size={14} />
+                </span>
                 </span>
               </div>
             </Link>
