@@ -272,21 +272,23 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="relative z-10 mt-4 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setViewingExpense(expense)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-smooth hover:bg-secondary hover:text-primary"
-                    title="View details"
-                    aria-label="View expense details"
-                  >
-                    <Eye size={16} />
-                    View detail
-                  </button>
+                <div className="relative z-10 mt-4 flex flex-col gap-3 border-t border-border pt-4">
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setViewingExpense(expense)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#622c04]/30 bg-[#fef3e8] px-4 py-2.5 text-sm font-semibold text-[#622c04] transition-all duration-200 hover:border-[#622c04] hover:bg-[#faefdd]"
+                      title="View details"
+                      aria-label="View expense details"
+                    >
+                      <Eye size={16} />
+                      View detail
+                    </button>
+                  </div>
                   {(typeof expense.createdBy === "object" && expense.createdBy && "_id" in expense.createdBy
                     ? (expense.createdBy as { _id: string })._id
                     : expense.createdBy ?? "") === user?._id && (
-                    <>
+                    <div className="flex justify-end gap-2">
                       <button
                         type="button"
                         onClick={() => setEditingExpense(expense)}
@@ -305,7 +307,7 @@ export default function Dashboard() {
                         <Trash2 size={16} />
                         {deletingId === expense._id ? "Deleting..." : "Delete"}
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>

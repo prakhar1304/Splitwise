@@ -511,61 +511,65 @@ export default function GroupDetailsClient() {
                       style={{ background: "linear-gradient(135deg, #fbf8f5 0%, #faefdd 45%, #f5e6d6 80%, rgba(247,133,45,0.06) 100%)" }}
                     >
                       <div
-                        className="pointer-events-none absolute top-0 left-0 flex h-[10rem] w-[10rem] items-center justify-center translate-x-[38%]  text-primary/12"
+                        className="pointer-events-none absolute top-0 left-0 flex h-[10rem] w-[10rem] items-center justify-center translate-x-[38%] text-primary/12"
                         aria-hidden
                       >
                         <IndianRupee size={4000} strokeWidth={3} />
                       </div>
-                      <div className="relative z-10 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <h3 className="text-base font-semibold text-foreground">
-                            {expense.description || "—"}
-                          </h3>
-                          <p className="text-xs text-muted-foreground">
-                            Paid by{" "}
-                            <span className="font-medium text-foreground">
-                              {getPaidByName(expense)}
-                            </span>
-                          </p>
+                      <div className="relative z-10 flex flex-col gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="text-base font-semibold text-foreground">
+                              {expense.description || "—"}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              Paid by{" "}
+                              <span className="font-medium text-foreground">
+                                {getPaidByName(expense)}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center text-lg font-bold text-primary">
+                              <IndianRupee size={18} strokeWidth={2.5} className="shrink-0" />
+                              {expense.amount.toLocaleString()}
+                            </div>
+                            {canEdit && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingExpense(expense)}
+                                  className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
+                                  title="Edit expense"
+                                  aria-label="Edit expense"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteExpense(expense._id)}
+                                  disabled={deletingExpenseId === expense._id}
+                                  className="inline-flex items-center justify-center rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+                                  title="Delete expense"
+                                  aria-label="Delete expense"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="mt-2 pt-3 border-t border-border/60 flex justify-end">
                           <button
                             type="button"
                             onClick={() => setViewingExpense(expense)}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#622c04]/30 bg-[#fef3e8] px-4 py-2.5 text-sm font-semibold text-[#622c04] transition-all duration-200 hover:border-[#622c04] hover:bg-[#faefdd]"
                             title="View details"
-                    aria-label="View expense details"
+                            aria-label="View expense details"
                           >
-                            <Eye size={14} />
+                            <Eye size={16} />
                             View detail
                           </button>
-                          <div className="flex items-center text-lg font-bold text-primary">
-                            <IndianRupee size={18} strokeWidth={2.5} className="shrink-0" />
-                            {expense.amount.toLocaleString()}
-                          </div>
-                          {canEdit && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => setEditingExpense(expense)}
-                                className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
-                                title="Edit expense"
-                                aria-label="Edit expense"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteExpense(expense._id)}
-                                disabled={deletingExpenseId === expense._id}
-                                className="inline-flex items-center justify-center rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
-                                title="Delete expense"
-                                aria-label="Delete expense"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -598,46 +602,81 @@ export default function GroupDetailsClient() {
               </div>
             ) : (
               <div className="space-y-4">
-                {settlements.map((item, index) => (
-                  <div
-                    key={index}
-                    className="rounded-xl border border-border bg-card p-5 shadow-sm"
-                  >
-                    <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-                      <div className="flex flex-1 flex-col items-center text-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-                          <UserCircle2 size={22} />
+                {settlements.map((item, index) => {
+                  const isYouPay = item.sender === user?.name;
+                  const isYouReceive = item.receiver === user?.name;
+                  return (
+                    <div
+                      key={index}
+                      className={`rounded-xl border p-5 shadow-sm transition-smooth ${
+                        isYouPay
+                          ? "border-accent/40 bg-[#faf3e8]"
+                          : isYouReceive
+                            ? "border-primary/40 bg-[#fef9f5]"
+                            : "border-border bg-card"
+                      }`}
+                    >
+                      {(isYouPay || isYouReceive) && (
+                        <div className="mb-3 flex justify-center">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                              isYouPay
+                                ? "bg-accent/15 text-accent"
+                                : "bg-[#faefdd] text-[#050315] ring-2 ring-[#f7852d]/50"
+                            }`}
+                          >
+                            {isYouPay ? "You pay" : "You receive"}
+                          </span>
                         </div>
-                        <div className="mt-2 text-sm font-semibold text-foreground">
-                          {item.sender}
-                        </div>
-                      </div>
-                      <div className="flex flex-1.5 flex-col items-center">
-                        <div className="text-lg font-extrabold text-primary">
-                          ₹{item.amount.toLocaleString()}
-                        </div>
-                        <div className="flex w-full items-center justify-center py-2">
-                          <div className="h-px flex-1 bg-primary/30" />
-                          <div className="rounded-full bg-card px-2 shadow-sm">
-                            <ArrowRight size={18} className="text-primary" />
+                      )}
+                      <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                        <div className="flex flex-1 flex-col items-center text-center">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                              isYouPay
+                                ? "bg-accent/20 text-accent"
+                                : "bg-secondary text-muted-foreground"
+                            }`}
+                          >
+                            <UserCircle2 size={22} />
                           </div>
-                          <div className="h-px flex-1 bg-primary/30" />
+                          <div className="mt-2 text-sm font-semibold text-foreground">
+                            {item.sender}
+                          </div>
+                        </div>
+                        <div className="flex flex-1.5 flex-col items-center">
+                          <div className="text-lg font-extrabold text-primary">
+                            ₹{item.amount.toLocaleString()}
+                          </div>
+                          <div className="flex w-full items-center justify-center py-2">
+                            <div className="h-px flex-1 bg-primary/30" />
+                            <div className="rounded-full bg-card px-2 shadow-sm">
+                              <ArrowRight size={18} className="text-primary" />
+                            </div>
+                            <div className="h-px flex-1 bg-primary/30" />
+                          </div>
+                        </div>
+                        <div className="flex flex-1 flex-col items-center text-center">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                              isYouReceive
+                                ? "bg-primary/20 text-primary"
+                                : "bg-secondary text-muted-foreground"
+                            }`}
+                          >
+                            <UserCircle2 size={22} />
+                          </div>
+                          <div className="mt-2 text-sm font-semibold text-foreground">
+                            {item.receiver}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-1 flex-col items-center text-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                          <UserCircle2 size={22} />
-                        </div>
-                        <div className="mt-2 text-sm font-semibold text-foreground">
-                          {item.receiver}
-                        </div>
+                      <div className="mt-3 rounded-lg border-l-4 border-primary bg-secondary/50 px-4 py-2 text-center text-xs text-foreground">
+                        {item.statement}
                       </div>
                     </div>
-                    <div className="mt-3 rounded-lg border-l-4 border-primary bg-secondary/50/50 px-4 py-2 text-center text-xs text-foreground">
-                      {item.statement}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

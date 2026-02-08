@@ -136,49 +136,95 @@ export default function BalancesSummary() {
           )}
 
           <div className="space-y-5">
-            {settlements.map((item, index) => (
-              <div key={index} className="rounded-xl border border-border bg-card p-6 shadow-sm transition-smooth">
-                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-                  <div className="flex flex-1 flex-col items-center text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
-                      <UserCircle2 size={28} />
+            {settlements.map((item, index) => {
+              const isYouPay = item.sender === user?.name;
+              const isYouReceive = item.receiver === user?.name;
+              return (
+                <div
+                  key={index}
+                  className={`rounded-xl border p-6 shadow-sm transition-smooth ${
+                    isYouPay
+                      ? "border-accent/40 bg-[#faf3e8]"
+                      : isYouReceive
+                        ? "border-primary/40 bg-[#fef9f5]"
+                        : "border-border bg-card"
+                  }`}
+                >
+                  {(isYouPay || isYouReceive) && (
+                    <div className="mb-4 flex justify-center">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold ${
+                          isYouPay
+                            ? "bg-accent/15 text-accent"
+                            : "bg-[#faefdd] text-[#050315] ring-2 ring-[#f7852d]/50"
+                        }`}
+                      >
+                        {isYouPay ? "You pay" : "You receive"}
+                      </span>
                     </div>
-                    <div className="mt-2 font-semibold text-foreground">
-                      {item.sender}
-                    </div>
-                    <div className="text-xs font-semibold uppercase text-red-600">
-                      Debtor
-                    </div>
-                  </div>
-                  <div className="flex flex-1.5 flex-col items-center">
-                    <div className="text-xl font-extrabold text-primary sm:text-2xl">
-                      ₹{item.amount.toLocaleString()}
-                    </div>
-                    <div className="flex w-full items-center justify-center py-2">
-                      <div className="h-px flex-1 bg-primary/30" />
-                      <div className="rounded-full bg-card px-2 shadow-sm">
-                        <ArrowRight size={20} className="text-primary" />
+                  )}
+                  <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                    <div className="flex flex-1 flex-col items-center text-center">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                          isYouPay
+                            ? "bg-accent/20 text-accent"
+                            : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        <UserCircle2 size={28} />
                       </div>
-                      <div className="h-px flex-1 bg-primary/30" />
+                      <div className="mt-2 font-semibold text-foreground">
+                        {item.sender}
+                      </div>
+                      <div
+                        className={`text-xs font-semibold uppercase ${
+                          isYouPay ? "text-accent" : "text-muted-foreground"
+                        }`}
+                      >
+                        Pays
+                      </div>
+                    </div>
+                    <div className="flex flex-1.5 flex-col items-center">
+                      <div className="text-xl font-extrabold text-primary sm:text-2xl">
+                        ₹{item.amount.toLocaleString()}
+                      </div>
+                      <div className="flex w-full items-center justify-center py-2">
+                        <div className="h-px flex-1 bg-primary/30" />
+                        <div className="rounded-full bg-card px-2 shadow-sm">
+                          <ArrowRight size={20} className="text-primary" />
+                        </div>
+                        <div className="h-px flex-1 bg-primary/30" />
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col items-center text-center">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                          isYouReceive
+                            ? "bg-primary/20 text-primary"
+                            : "bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        <UserCircle2 size={28} />
+                      </div>
+                      <div className="mt-2 font-semibold text-foreground">
+                        {item.receiver}
+                      </div>
+                      <div
+                        className={`text-xs font-semibold uppercase ${
+                          isYouReceive ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        Receives
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col items-center text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <UserCircle2 size={28} />
-                    </div>
-                    <div className="mt-2 font-semibold text-foreground">
-                      {item.receiver}
-                    </div>
-                    <div className="text-xs font-semibold uppercase text-emerald-600">
-                      Creditor
-                    </div>
+                  <div className="mt-4 rounded-lg border-l-4 border-primary bg-secondary/50 px-4 py-3 text-center text-sm text-foreground">
+                    {item.statement}
                   </div>
                 </div>
-                <div className="mt-4 rounded-lg border-l-4 border-primary bg-secondary/50 px-4 py-3 text-center text-sm text-foreground">
-                  {item.statement}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>
